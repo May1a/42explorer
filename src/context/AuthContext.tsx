@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setAuthError(null);
     try {
-      const res = await fetch("/api/42/me", {
+      const res = await fetch("/api/42?path=/me", {
         headers: { Authorization: `Bearer ${tkn}` },
       });
       if (res.ok) {

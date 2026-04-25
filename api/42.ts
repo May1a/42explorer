@@ -7,6 +7,29 @@
  */
 export const config = { runtime: "edge" };
 
+const rateWindowMs = 1000;
+const rateLimitPerSecond = 5;
+const rateCache = new Map<string, number[]>();
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const wins = rateCache.get(key) ?? [];
+  const fresh = wins.filter((t) => t > now - rateWindowMs);
+  if (fresh.length >= rateLimitPerSecond) return true;
+  fresh.push(now);
+  rateCache.set(key, fresh);
+  return false;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of rateCache) {
+    const fresh = v.filter((t) => t > now - rateWindowMs);
+    if (fresh.length === 0) rateCache.delete(k);
+    else rateCache.set(k, fresh);
+  }
+}, 30_000);
+
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === "OPTIONS") {
     return new Response(null, {
@@ -16,6 +39,23 @@ export default async function handler(request: Request): Promise<Response> {
         "Access-Control-Allow-Headers": "Authorization, Content-Type",
       },
     });
+  }
+
+  const auth = request.headers.get("Authorization") ?? "anonymous";
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rateKey = `${ip}:${auth.slice(-8)}`;
+
+  if (isRateLimited(rateKey)) {
+    return Response.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Retry-After": "1",
+        },
+      }
+    );
   }
 
   const url = new URL(request.url);
@@ -29,8 +69,7 @@ export default async function handler(request: Request): Promise<Response> {
   const apiUrl = new URL(`https://api.intra.42.fr/v2${path}`);
   url.searchParams.forEach((value, key) => apiUrl.searchParams.set(key, value));
 
-  const auth = request.headers.get("Authorization");
-  if (!auth) {
+  if (!auth || auth === "anonymous") {
     return Response.json({ error: "Missing Authorization header" }, { status: 401 });
   }
 

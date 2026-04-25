@@ -1,19 +1,20 @@
 import { type ReactNode, useState, useEffect } from "react";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 
-export type Page = "dashboard" | "students" | "locations" | "profile";
-
 interface Props {
-  page: Page;
-  onNavigate: (page: Page, extra?: string) => void;
   children: ReactNode;
 }
 
-const NAV: { id: Page; label: string; icon: string }[] = [
-  { id: "dashboard",  label: "Dashboard",  icon: "⬡" },
-  { id: "students",   label: "Students",   icon: "◎" },
-  { id: "locations",  label: "PeerFinder", icon: "◉" },
-  { id: "profile",    label: "Profile",    icon: "◈" },
+const NAV = [
+  { to: "/" as const,           label: "Dashboard",     icon: "⬡" },
+  { to: "/students" as const,   label: "Students",      icon: "◎" },
+  { to: "/projects" as const,   label: "Projects",      icon: "◉" },
+  { to: "/evaluations" as const,label: "Evaluations",   icon: "◎" },
+  { to: "/events" as const,     label: "Events",        icon: "◉" },
+  { to: "/slots" as const,      label: "Slots",         icon: "◈" },
+  { to: "/locations" as const,  label: "PeerFinder",    icon: "◉" },
+  { to: "/settings" as const,   label: "Settings",      icon: "◈" },
 ];
 
 function formatLevel(cursusUsers: any[]): string {
@@ -22,20 +23,16 @@ function formatLevel(cursusUsers: any[]): string {
   return `Lv ${cu?.level?.toFixed(2) ?? "?"}`;
 }
 
-export function Layout({ page, onNavigate, children }: Props) {
+export function Layout({ children }: Props) {
   const { user, login, logout, config } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = location.pathname;
 
   function closeSidebar() {
     setSidebarOpen(false);
   }
 
-  function handleNavigate(page: Page, extra?: string) {
-    onNavigate(page, extra);
-    closeSidebar();
-  }
-
-  // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = "hidden";
@@ -44,6 +41,11 @@ export function Layout({ page, onNavigate, children }: Props) {
     }
     return () => { document.body.style.overflow = ""; };
   }, [sidebarOpen]);
+
+  function isActive(path: string) {
+    if (path === "/") return pathname === "/";
+    return pathname.startsWith(path);
+  }
 
   return (
     <div className="flex h-full overflow-hidden w-full">
@@ -67,7 +69,6 @@ export function Layout({ page, onNavigate, children }: Props) {
         />
       )}
 
-      {/* ── Sidebar ── */}
       <aside
         className={
           `w-[230px] shrink-0 flex flex-col overflow-hidden border-r
@@ -80,7 +81,7 @@ export function Layout({ page, onNavigate, children }: Props) {
       >
         {/* Logo + mobile close button */}
         <div className="px-5 pt-6 pb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5" onClick={closeSidebar}>
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center text-lg font-black"
               style={{
@@ -101,7 +102,7 @@ export function Layout({ page, onNavigate, children }: Props) {
                 Network
               </div>
             </div>
-          </div>
+          </Link>
           <button
             onClick={closeSidebar}
             className="md:hidden p-1.5 rounded-lg transition-colors flex items-center justify-center hover:bg-card-hi"
@@ -118,12 +119,13 @@ export function Layout({ page, onNavigate, children }: Props) {
 
         {/* Nav */}
         <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto px-3">
-          {NAV.map((item, i) => {
-            const active = page === item.id;
+          {NAV.map((item) => {
+            const active = isActive(item.to);
             return (
-              <button
-                key={item.id}
-                onClick={() => handleNavigate(item.id)}
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={closeSidebar}
                 className={`
                   group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all text-left
                   relative overflow-hidden
@@ -149,7 +151,6 @@ export function Layout({ page, onNavigate, children }: Props) {
                   }
                 }}
               >
-                {/* Active indicator bar */}
                 {active && (
                   <div
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full"
@@ -163,7 +164,7 @@ export function Layout({ page, onNavigate, children }: Props) {
                   {item.icon}
                 </span>
                 <span className="relative z-10">{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -184,8 +185,9 @@ export function Layout({ page, onNavigate, children }: Props) {
         <div className="p-3">
           {user ? (
             <>
-              <button
-                onClick={() => handleNavigate("profile")}
+              <Link
+                to="/profile/$login"
+                params={{ login: user.login }}
                 className="flex items-center gap-2.5 w-full p-2 rounded-lg mb-2 transition-all hover:bg-card-hi"
                 style={{ color: "#e2e8f0" }}
               >
@@ -211,7 +213,7 @@ export function Layout({ page, onNavigate, children }: Props) {
                     {formatLevel(user.cursus_users)}
                   </div>
                 </div>
-              </button>
+              </Link>
               <button
                 onClick={logout}
                 className="w-full py-2 text-xs font-semibold rounded-lg border transition-all"
@@ -232,7 +234,7 @@ export function Layout({ page, onNavigate, children }: Props) {
             </>
           ) : (
             <button
-              onClick={config?.clientId ? login : () => handleNavigate("dashboard")}
+              onClick={config?.clientId ? login : () => { closeSidebar(); }}
               className="w-full py-2.5 text-xs font-bold rounded-lg transition-all"
               style={{ background: "var(--color-primary)", color: "#000" }}
             >
