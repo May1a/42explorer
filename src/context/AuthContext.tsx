@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(tkn);
     setLoading(true);
     try {
-      const res = await fetch("https://api.intra.42.fr/v2/me", {
+      const res = await fetch("/api/42/me", {
         headers: { Authorization: `Bearer ${tkn}` },
       });
       if (res.ok) setUser(await res.json());

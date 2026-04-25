@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const BASE = "https://api.intra.42.fr/v2";
+// All requests go through our Vercel proxy — the 42 API blocks direct browser calls (CORS).
+const BASE = "/api/42";
 
 export interface APIResult<T> {
   data: T | null;
@@ -18,7 +19,7 @@ export interface APIResult<T> {
  *  Others passed through as-is.
  */
 export function buildURL(path: string, params?: Record<string, string | number | boolean | undefined>): string {
-  const url = new URL(`${BASE}${path}`);
+  const url = new URL(`${BASE}${path}`, window.location.origin);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v === undefined || v === null || v === "") continue;
