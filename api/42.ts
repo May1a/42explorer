@@ -35,7 +35,7 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response(null, {
       headers: {
         "Access-Control-Allow-Origin":  "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Authorization, Content-Type",
       },
     });
@@ -75,8 +75,16 @@ export default async function handler(request: Request): Promise<Response> {
 
   let upstream: Response;
   try {
+    const headers = new Headers({ Authorization: auth });
+    const contentType = request.headers.get("Content-Type");
+    if (contentType) headers.set("Content-Type", contentType);
+
     upstream = await fetch(apiUrl.toString(), {
-      headers: { Authorization: auth },
+      method: request.method,
+      headers,
+      body: request.method === "GET" || request.method === "HEAD"
+        ? undefined
+        : await request.text(),
     });
   } catch (e: any) {
     return Response.json({ error: `Upstream fetch failed: ${e.message}` }, { status: 502 });
