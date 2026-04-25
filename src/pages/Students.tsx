@@ -44,6 +44,16 @@ function kickoffRange(month: string) {
   return `${start.toISOString()},${end.toISOString()}`;
 }
 
+function kickoffLabel(month: string) {
+  const [year, rawMonth] = month.split("-").map(Number);
+  if (!year || !rawMonth) return month;
+  return new Date(Date.UTC(year, rawMonth - 1, 1)).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function cursusUserToStudent(cursusUser: CursusUser): FortyTwoUser {
   return {
     ...cursusUser.user,
@@ -118,6 +128,12 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   // ── Data — one query, no manual effects ───────────────────────────────────
   const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
   const { data: cursusRes }  = use42Query<Cursus[]>("/cursus",  { "page.size": 100, sort: "name" });
+  const { data: kickoffRes } = use42Query<CursusUser[]>("/cursus_users", {
+    "page.size": 100,
+    sort: "-begin_at",
+    ...(campusId && { "filter.campus_id": campusId }),
+    ...(cursusId && { "filter.cursus_id": cursusId }),
+  });
   const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[] | CursusUser[]>(studentsPath, params);
 
   const students = useMemo(() => {
@@ -152,6 +168,14 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const total    = usesLocalFilters ? students.length : studentsRes?.total ?? 0;
   const campuses = campusRes?.data ?? [];
   const cursuses = cursusRes?.data ?? [];
+  const kickoffOptions = useMemo(() => {
+    const months = new Set<string>();
+    for (const cursusUser of kickoffRes?.data ?? []) {
+      if (cursusUser.begin_at) months.add(cursusUser.begin_at.slice(0, 7));
+    }
+    if (kickoff) months.add(kickoff);
+    return [...months].sort((a, b) => b.localeCompare(a));
+  }, [kickoffRes?.data, kickoff]);
 
   const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || kickoff || levelMin > 0 || levelMax < 21 || onlineOnly);
 
@@ -216,12 +240,16 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Kickoff</label>
-            <input
-              type="month"
+            <select
               value={kickoff}
               onChange={e => handleKickoff(e.target.value)}
               className="w-full text-xs"
-            />
+            >
+              <option value="">All kickoffs</option>
+              {kickoffOptions.map(month => (
+                <option key={month} value={month}>{kickoffLabel(month)}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
