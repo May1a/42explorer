@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { StudentCard } from "../components/StudentCard";
 import { Pagination } from "../components/Pagination";
 import { SkeletonCard } from "../components/Loading";
-import type { FortyTwoUser, Campus, Cursus } from "../types";
+import type { FortyTwoUser, Campus, Cursus, CursusUser } from "../types";
 
 const PAGE_SIZE = 20;
 
@@ -27,12 +27,30 @@ function useDebounce<T>(value: T, ms: number): T {
 }
 
 const USER_API_SORTS = new Set(["login", "-login", "created_at", "-created_at"]);
+const CURSUS_USER_API_SORTS = new Set(["level", "-level", "begin_at", "-begin_at"]);
 
 function selectedCursusUser(user: FortyTwoUser, cursusId: string) {
   const id = Number(cursusId);
   return (id ? user.cursus_users?.find(c => c.cursus_id === id) : undefined)
     ?? user.cursus_users?.find(c => c.cursus_id === 21)
     ?? user.cursus_users?.[user.cursus_users.length - 1];
+}
+
+function kickoffRange(month: string) {
+  const [year, rawMonth] = month.split("-").map(Number);
+  if (!year || !rawMonth) return null;
+  const start = new Date(Date.UTC(year, rawMonth - 1, 1));
+  const end = new Date(Date.UTC(year, rawMonth, 1));
+  return `${start.toISOString()},${end.toISOString()}`;
+}
+
+function cursusUserToStudent(cursusUser: CursusUser): FortyTwoUser {
+  return {
+    ...cursusUser.user,
+    id: cursusUser.user.id ?? cursusUser.user_id,
+    login: cursusUser.user.login ?? "",
+    cursus_users: [cursusUser],
+  } as FortyTwoUser;
 }
 
 export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
@@ -44,6 +62,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const [campusId,  setCampusId]  = useState("");
   const [campusReady, setCampusReady] = useState(false);
   const [cursusId,  setCursusId]  = useState("");
+  const [kickoff,   setKickoff]   = useState("");
   const [levelMin,  setLevelMin]  = useState(0);
   const [levelMax,  setLevelMax]  = useState(21);
   const [onlineOnly, setOnlineOnly] = useState(false);
@@ -63,44 +82,62 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   function handleSearch(v: string)      { setSearch(v);    setPage(1); }
   function handleCampus(v: string)      { setCampusId(v); setCampusReady(true); setPage(1); }
   function handleCursus(v: string)      { setCursusId(v);  setPage(1); }
+  function handleKickoff(v: string)     { setKickoff(v);   setPage(1); }
   function handleSort(v: string)        { setSort(v);      setPage(1); }
   function handleOnline(v: boolean)     { setOnlineOnly(v); setPage(1); }
   function handleLevelMin(v: number)    { setLevelMin(v);  setPage(1); }
   function handleLevelMax(v: number)    { setLevelMax(v);  setPage(1); }
 
   function clearFilters() {
-    setSearch(""); setCampusId(primaryCampusId); setCampusReady(true); setCursusId("");
+    setSearch(""); setCampusId(primaryCampusId); setCampusReady(true); setCursusId(""); setKickoff("");
     setLevelMin(0); setLevelMax(21); setOnlineOnly(false);
     setSort("-level"); setPage(1);
   }
 
   // ── Query params — derived, stable object ─────────────────────────────────
-  const studentsPath = cursusId ? `/cursus/${cursusId}/users` : "/users";
-  const apiSort = USER_API_SORTS.has(sort) ? sort : undefined;
+  const kickoffRangeValue = kickoffRange(kickoff);
+  const usesKickoffEndpoint = Boolean(kickoffRangeValue);
+  const studentsPath = usesKickoffEndpoint
+    ? (cursusId ? `/cursus/${cursusId}/cursus_users` : "/cursus_users")
+    : (cursusId ? `/cursus/${cursusId}/users` : "/users");
+  const apiSort = usesKickoffEndpoint
+    ? (CURSUS_USER_API_SORTS.has(sort) ? sort : undefined)
+    : (USER_API_SORTS.has(sort) ? sort : undefined);
 
   const params = useMemo(() => ({
     "page.number": page,
     "page.size":   PAGE_SIZE,
     ...(apiSort             && { sort: apiSort }),
-    ...(campusId            && { "filter.primary_campus_id":  campusId }),
-    ...(debouncedSearch     && { "filter.login":      debouncedSearch }),
-  }), [page, apiSort, campusId, debouncedSearch]);
+    ...(usesKickoffEndpoint && campusId && { "filter.campus_id": campusId }),
+    ...(!usesKickoffEndpoint && campusId && { "filter.primary_campus_id":  campusId }),
+    ...(!usesKickoffEndpoint && debouncedSearch && { "filter.login":      debouncedSearch }),
+    ...(usesKickoffEndpoint && kickoffRangeValue && { "range.begin_at": kickoffRangeValue }),
+    ...(usesKickoffEndpoint && (levelMin > 0 || levelMax < 21) && { "range.level": `${levelMin},${levelMax}` }),
+  }), [page, apiSort, usesKickoffEndpoint, campusId, debouncedSearch, cursusId, kickoffRangeValue, levelMin, levelMax]);
 
   // ── Data — one query, no manual effects ───────────────────────────────────
   const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
   const { data: cursusRes }  = use42Query<Cursus[]>("/cursus",  { "page.size": 100, sort: "name" });
-  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[]>(studentsPath, params);
+  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[] | CursusUser[]>(studentsPath, params);
 
   const students = useMemo(() => {
     const rows = studentsRes?.data ?? [];
     const filtered = rows.filter(user => {
-      const cursusUser = selectedCursusUser(user, cursusId);
+      const student = usesKickoffEndpoint ? cursusUserToStudent(user as CursusUser) : user as FortyTwoUser;
+      const cursusUser = selectedCursusUser(student, cursusId);
       const level = cursusUser?.level ?? 0;
-      if (onlineOnly && !user.location) return false;
+      const matchesSearch = !usesKickoffEndpoint || !debouncedSearch || [
+        student.login,
+        student.displayname,
+        student.email,
+      ].some(value => value?.toLowerCase().includes(debouncedSearch.toLowerCase()));
+      if (onlineOnly && !student.location) return false;
+      if (!matchesSearch) return false;
+      if (usesKickoffEndpoint) return true;
       return level >= levelMin && level <= levelMax;
-    });
+    }).map(user => usesKickoffEndpoint ? cursusUserToStudent(user as CursusUser) : user as FortyTwoUser);
 
-    if (sort === "level" || sort === "-level") {
+    if (!usesKickoffEndpoint && (sort === "level" || sort === "-level")) {
       return [...filtered].sort((a, b) => {
         const aLevel = selectedCursusUser(a, cursusId)?.level ?? 0;
         const bLevel = selectedCursusUser(b, cursusId)?.level ?? 0;
@@ -109,14 +146,14 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
     }
 
     return filtered;
-  }, [studentsRes?.data, cursusId, levelMin, levelMax, onlineOnly, sort]);
+  }, [studentsRes?.data, usesKickoffEndpoint, cursusId, levelMin, levelMax, onlineOnly, debouncedSearch, sort]);
 
-  const usesLocalFilters = onlineOnly || levelMin > 0 || levelMax < 21;
+  const usesLocalFilters = onlineOnly || (!usesKickoffEndpoint && (levelMin > 0 || levelMax < 21)) || (usesKickoffEndpoint && Boolean(debouncedSearch));
   const total    = usesLocalFilters ? students.length : studentsRes?.total ?? 0;
   const campuses = campusRes?.data ?? [];
   const cursuses = cursusRes?.data ?? [];
 
-  const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || levelMin > 0 || levelMax < 21 || onlineOnly);
+  const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || kickoff || levelMin > 0 || levelMax < 21 || onlineOnly);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-5">
@@ -156,7 +193,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         </div>
 
         {/* Dropdowns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Campus</label>
             <select value={campusId} onChange={e => handleCampus(e.target.value)} className="w-full text-xs">
@@ -176,6 +213,15 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
             <select value={sort} onChange={e => handleSort(e.target.value)} className="w-full text-xs">
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Kickoff</label>
+            <input
+              type="month"
+              value={kickoff}
+              onChange={e => handleKickoff(e.target.value)}
+              className="w-full text-xs"
+            />
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
