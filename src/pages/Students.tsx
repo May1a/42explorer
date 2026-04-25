@@ -8,6 +8,31 @@ import type { FortyTwoUser, Campus, Cursus, CursusUser } from "../types";
 
 const PAGE_SIZE = 20;
 
+function getStudentsHashParams(): URLSearchParams {
+  const hash = window.location.hash;
+  const qIdx = hash.indexOf("?");
+  return new URLSearchParams(qIdx >= 0 ? hash.slice(qIdx + 1) : "");
+}
+
+function saveStudentsHash(filters: {
+  search: string; campusId: string; cursusId: string; kickoff: string;
+  levelMin: number; levelMax: number; onlineOnly: boolean; sort: string; page: number;
+}) {
+  const p = new URLSearchParams();
+  if (filters.search) p.set("q", filters.search);
+  if (filters.campusId) p.set("campus", filters.campusId);
+  if (filters.cursusId) p.set("cursus", filters.cursusId);
+  if (filters.kickoff) p.set("kickoff", filters.kickoff);
+  if (filters.levelMin > 0) p.set("lvMin", String(filters.levelMin));
+  if (filters.levelMax < 21) p.set("lvMax", String(filters.levelMax));
+  if (filters.onlineOnly) p.set("online", "1");
+  if (filters.sort !== "-level") p.set("sort", filters.sort);
+  if (filters.page > 1) p.set("page", String(filters.page));
+  const hash = p.toString() ? `#/students?${p.toString()}` : "#/students";
+  window.history.replaceState(null, "", hash);
+  sessionStorage.setItem("studentsHash", hash);
+}
+
 const SORT_OPTIONS = [
   { value: "-level",      label: "Level (High → Low)" },
   { value: "level",       label: "Level (Low → High)" },
@@ -71,17 +96,17 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const { user } = useAuth();
   const primaryCampusId = user?.campus_users?.find(c => c.is_primary)?.campus_id.toString() ?? "";
 
-  // ── Filter state ──────────────────────────────────────────────────────────
-  const [search,    setSearch]    = useState("");
-  const [campusId,  setCampusId]  = useState("");
-  const [campusReady, setCampusReady] = useState(false);
-  const [cursusId,  setCursusId]  = useState("");
-  const [kickoff,   setKickoff]   = useState("");
-  const [levelMin,  setLevelMin]  = useState(0);
-  const [levelMax,  setLevelMax]  = useState(21);
-  const [onlineOnly, setOnlineOnly] = useState(false);
-  const [sort,      setSort]      = useState("-level");
-  const [page,      setPage]      = useState(1);
+  // ── Filter state — initialised from URL hash params ───────────────────────
+  const [search,    setSearch]    = useState(() => getStudentsHashParams().get("q") ?? "");
+  const [campusId,  setCampusId]  = useState(() => getStudentsHashParams().get("campus") ?? "");
+  const [campusReady, setCampusReady] = useState(() => Boolean(getStudentsHashParams().get("campus")));
+  const [cursusId,  setCursusId]  = useState(() => getStudentsHashParams().get("cursus") ?? "");
+  const [kickoff,   setKickoff]   = useState(() => getStudentsHashParams().get("kickoff") ?? "");
+  const [levelMin,  setLevelMin]  = useState(() => Number(getStudentsHashParams().get("lvMin") ?? 0));
+  const [levelMax,  setLevelMax]  = useState(() => Number(getStudentsHashParams().get("lvMax") ?? 21));
+  const [onlineOnly, setOnlineOnly] = useState(() => getStudentsHashParams().get("online") === "1");
+  const [sort,      setSort]      = useState(() => getStudentsHashParams().get("sort") ?? "-level");
+  const [page,      setPage]      = useState(() => Number(getStudentsHashParams().get("page") ?? 1));
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -91,6 +116,12 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
       setCampusReady(true);
     }
   }, [primaryCampusId, campusReady]);
+
+  // Persist filter state to URL hash + sessionStorage whenever anything changes
+  useEffect(() => {
+    if (!campusReady) return;
+    saveStudentsHash({ search, campusId, cursusId, kickoff, levelMin, levelMax, onlineOnly, sort, page });
+  }, [campusReady, search, campusId, cursusId, kickoff, levelMin, levelMax, onlineOnly, sort, page]);
 
   // Every handler resets page — no useEffect needed
   function handleSearch(v: string)      { setSearch(v);    setPage(1); }

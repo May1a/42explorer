@@ -8,10 +8,11 @@ import { LocationsPage } from "./pages/Locations";
 import { ProfilePage }   from "./pages/Profile";
 import { FullPageSpinner } from "./components/Loading";
 
-/** Derive page + optional param from URL hash, e.g. #/profile/jdoe */
+/** Derive page + optional param from URL hash, e.g. #/profile/jdoe or #/students?q=foo */
 function parseHash(): { page: Page; param?: string } {
-  const hash = window.location.hash.replace(/^#\/?/, "");
-  const [seg, param] = hash.split("/");
+  const raw = window.location.hash.replace(/^#\/?/, "");
+  const [pathPart = ""] = raw.split("?");
+  const [seg, param] = pathPart.split("/");
   const page = (["dashboard", "students", "locations", "profile"].includes(seg ?? "") ? seg : "dashboard") as Page;
   return { page, param: param || undefined };
 }
@@ -33,7 +34,12 @@ export function App() {
   }, []);
 
   function navigate(p: Page, extra?: string) {
-    const hash = extra ? `#/${p}/${extra}` : `#/${p}`;
+    let hash: string;
+    if (p === "students") {
+      hash = sessionStorage.getItem("studentsHash") ?? "#/students";
+    } else {
+      hash = extra ? `#/${p}/${extra}` : `#/${p}`;
+    }
     window.location.hash = hash;
     setPage(p);
     setParam(extra);
