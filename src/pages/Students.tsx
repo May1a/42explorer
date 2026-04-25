@@ -54,6 +54,10 @@ function kickoffLabel(month: string) {
   });
 }
 
+function kickoffMonth(value: string) {
+  return value.slice(0, 7);
+}
+
 function cursusUserToStudent(cursusUser: CursusUser): FortyTwoUser {
   return {
     ...cursusUser.user,
@@ -128,9 +132,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   // ── Data — one query, no manual effects ───────────────────────────────────
   const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
   const { data: cursusRes }  = use42Query<Cursus[]>("/cursus",  { "page.size": 100, sort: "name" });
-  const { data: kickoffRes } = use42Query<CursusUser[]>("/cursus_users", {
-    "page.size": 100,
-    sort: "-begin_at",
+  const { data: kickoffRes } = use42Query<Record<string, number>>("/cursus_users/graph/on/begin_at/by/month", {
     ...(campusId && { "filter.campus_id": campusId }),
     ...(cursusId && { "filter.cursus_id": cursusId }),
   });
@@ -170,8 +172,8 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const cursuses = cursusRes?.data ?? [];
   const kickoffOptions = useMemo(() => {
     const months = new Set<string>();
-    for (const cursusUser of kickoffRes?.data ?? []) {
-      if (cursusUser.begin_at) months.add(cursusUser.begin_at.slice(0, 7));
+    for (const [month, count] of Object.entries(kickoffRes?.data ?? {})) {
+      if (count > 0) months.add(kickoffMonth(month));
     }
     if (kickoff) months.add(kickoff);
     return [...months].sort((a, b) => b.localeCompare(a));
