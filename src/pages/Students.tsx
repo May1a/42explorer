@@ -149,16 +149,17 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
     ? (CURSUS_USER_API_SORTS.has(sort) ? sort : undefined)
     : (USER_API_SORTS.has(sort) ? sort : undefined);
 
+  const isNameSearch = !usesKickoffEndpoint && Boolean(debouncedSearch);
   const params = useMemo(() => ({
-    "page.number": page,
-    "page.size":   PAGE_SIZE,
+    "page.number": isNameSearch ? 1 : page,
+    "page.size":   isNameSearch ? 100 : PAGE_SIZE,
     ...(apiSort             && { sort: apiSort }),
     ...(usesKickoffEndpoint && campusId && { "filter.campus_id": campusId }),
     ...(!usesKickoffEndpoint && campusId && { "filter.primary_campus_id":  campusId }),
     ...(!usesKickoffEndpoint && debouncedSearch && { "filter.login":      debouncedSearch }),
     ...(usesKickoffEndpoint && kickoffRangeValue && { "range.begin_at": kickoffRangeValue }),
     ...(usesKickoffEndpoint && (levelMin > 0 || levelMax < 21) && { "range.level": `${levelMin},${levelMax}` }),
-  }), [page, apiSort, usesKickoffEndpoint, campusId, debouncedSearch, cursusId, kickoffRangeValue, levelMin, levelMax]);
+  }), [page, isNameSearch, apiSort, usesKickoffEndpoint, campusId, debouncedSearch, cursusId, kickoffRangeValue, levelMin, levelMax]);
 
   // ── Data — one query, no manual effects ───────────────────────────────────
   const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
@@ -167,16 +168,44 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
     ...(campusId && { "filter.campus_id": campusId }),
     ...(cursusId && { "filter.cursus_id": cursusId }),
   });
-  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[] | CursusUser[]>(studentsPath, params);
+  const { data: studentsRes, isLoading: isLoadingMain, error } = use42Query<FortyTwoUser[] | CursusUser[]>(studentsPath, params);
+
+  const nameSearchPath = isNameSearch ? (cursusId ? `/cursus/${cursusId}/users` : "/users") : null;
+  const firstNameParams = useMemo(() => ({
+    "page.size": 100,
+    ...(campusId && { "filter.primary_campus_id": campusId }),
+    "filter.first_name": debouncedSearch,
+  }), [campusId, debouncedSearch]);
+  const lastNameParams = useMemo(() => ({
+    "page.size": 100,
+    ...(campusId && { "filter.primary_campus_id": campusId }),
+    "filter.last_name": debouncedSearch,
+  }), [campusId, debouncedSearch]);
+  const { data: firstNameRes, isLoading: isLoadingFirstName } = use42Query<FortyTwoUser[]>(nameSearchPath, firstNameParams);
+  const { data: lastNameRes,  isLoading: isLoadingLastName  } = use42Query<FortyTwoUser[]>(nameSearchPath, lastNameParams);
+  const isLoading = isLoadingMain || isLoadingFirstName || isLoadingLastName;
 
   const students = useMemo(() => {
-    const rows = studentsRes?.data ?? [];
+    let rows: (FortyTwoUser | CursusUser)[] = (studentsRes?.data ?? []) as (FortyTwoUser | CursusUser)[];
+
+    if (isNameSearch) {
+      const seen = new Set((rows as FortyTwoUser[]).map(u => u.id));
+      for (const user of [...(firstNameRes?.data ?? []), ...(lastNameRes?.data ?? [])]) {
+        if (!seen.has(user.id)) {
+          seen.add(user.id);
+          rows = [...rows, user];
+        }
+      }
+    }
+
     const filtered = rows.filter(user => {
       const student = usesKickoffEndpoint ? cursusUserToStudent(user as CursusUser) : user as FortyTwoUser;
       const cursusUser = selectedCursusUser(student, cursusId);
       const level = cursusUser?.level ?? 0;
       const matchesSearch = !usesKickoffEndpoint || !debouncedSearch || [
         student.login,
+        student.first_name,
+        student.last_name,
         student.displayname,
         student.email,
       ].some(value => value?.toLowerCase().includes(debouncedSearch.toLowerCase()));
@@ -195,9 +224,12 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
     }
 
     return filtered;
-  }, [studentsRes?.data, usesKickoffEndpoint, cursusId, levelMin, levelMax, onlineOnly, debouncedSearch, sort]);
+  }, [studentsRes?.data, firstNameRes?.data, lastNameRes?.data, isNameSearch, usesKickoffEndpoint, cursusId, levelMin, levelMax, onlineOnly, debouncedSearch, sort]);
 
-  const usesLocalFilters = onlineOnly || (!usesKickoffEndpoint && (levelMin > 0 || levelMax < 21)) || (usesKickoffEndpoint && Boolean(debouncedSearch));
+  const usesLocalFilters = onlineOnly || Boolean(debouncedSearch) || (!usesKickoffEndpoint && (levelMin > 0 || levelMax < 21));
+  const displayedStudents = usesLocalFilters
+    ? students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : students;
   const total    = usesLocalFilters ? students.length : studentsRes?.total ?? 0;
   const campuses = campusRes?.data ?? [];
   const cursuses = cursusRes?.data ?? [];
@@ -234,7 +266,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
             type="text"
             value={search}
             onChange={e => handleSearch(e.target.value)}
-            placeholder="◈  Search by login or display name..."
+            placeholder="◈  Search by login, first or last name..."
             className="flex-1 min-w-[140px]"
             style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
           />
@@ -335,7 +367,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-      ) : students.length === 0 ? (
+      ) : displayedStudents.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◈</div>
           <div className="text-sm" style={{ color: "var(--color-faint)" }}>No students found</div>
@@ -349,7 +381,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {students.map(s => (
+            {displayedStudents.map(s => (
               <StudentCard key={s.id} user={s} onClick={() => onNavigate("profile", s.login)} />
             ))}
           </div>
