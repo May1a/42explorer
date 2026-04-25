@@ -1,113 +1,196 @@
 import { useState, useMemo } from "react";
-import { useMySlots } from "../api/slots";
+import { useMySlots, useCreateSlot, useDeleteSlot } from "../api/slots";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { Slot } from "../types";
 
-const DAY_HEADERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
+const HOUR_HEIGHT = 44; // px per hour row
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function openSlot(slotId: number) {
-  window.open(`https://profile.intra.42.fr/slots/${slotId}`, "_blank");
+/** Monday = 0 … Sunday = 6 */
+function weekStart(d: Date): Date {
+  const date = new Date(d);
+  const day = (date.getDay() + 6) % 7; // Mon-based
+  date.setDate(date.getDate() - day);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
-function dateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function addDays(d: Date, n: number): Date {
+  const date = new Date(d);
+  date.setDate(date.getDate() + n);
+  return date;
 }
 
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function formatISO(date: Date, time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const d = new Date(date);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+
+function slotStyle(begin: Date, end: Date): React.CSSProperties {
+  const startMin = begin.getHours() * 60 + begin.getMinutes();
+  const durationMin = (end.getTime() - begin.getTime()) / 60000;
+  const top = (startMin / 60) * HOUR_HEIGHT;
+  const height = (durationMin / 60) * HOUR_HEIGHT;
+  return { top, height: Math.max(height, 20) };
+}
+
 export function SlotsPage() {
-  const { data, isLoading, error } = useMySlots({ "page.size": 100 });
-
   const today = new Date();
-  const [currentMonth, setCurrentMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [week, setWeek] = useState(() => weekStart(today));
+  const [showForm, setShowForm] = useState(false);
+  const [formDate, setFormDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [formStart, setFormStart] = useState("09:00");
+  const [formEnd, setFormEnd] = useState("10:00");
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const slots = (data?.data ?? []) as Slot[];
+  const { data, isLoading, error } = useMySlots({ "page.size": 200 });
+  const create = useCreateSlot();
+  const del = useDeleteSlot();
 
-  const slotsByDate = useMemo(() => {
-    const map = new Map<string, Slot[]>();
-    for (const slot of slots) {
-      const key = dateKey(new Date(slot.begin_at));
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(slot);
-    }
-    return map;
-  }, [slots]);
+  const slots = data?.data ?? [];
 
-  const selectedSlots = selectedDate ? (slotsByDate.get(selectedDate) ?? []) : [];
+  const weekEnd = addDays(week, 6);
+  const weekLabel = `${week.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
-  // ── Calendar grid math ──
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  // Monday = 0, Sunday = 6
-  const startOffset = (firstDay.getDay() + 6) % 7;
+  const days = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(week, i);
+      const daySlots = slots.filter((s) => sameDay(new Date(s.begin_at), date));
+      return { date, daySlots };
+    });
+  }, [week, slots]);
 
-  const monthLabel = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-  function prevMonth() {
-    setCurrentMonth(new Date(year, month - 1, 1));
-    setSelectedDate(null);
+  function prevWeek() {
+    setWeek(addDays(week, -7));
+    setShowForm(false);
   }
-  function nextMonth() {
-    setCurrentMonth(new Date(year, month + 1, 1));
-    setSelectedDate(null);
+  function nextWeek() {
+    setWeek(addDays(week, 7));
+    setShowForm(false);
   }
   function goToday() {
-    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    setSelectedDate(null);
+    setWeek(weekStart(today));
+    setShowForm(false);
   }
 
-  // Build 42-cell grid
-  const cells: Array<{ date: Date | null; key: string; isOutside: boolean }> = [];
-  // Previous month fill
-  for (let i = startOffset - 1; i >= 0; i--) {
-    const d = new Date(year, month, -i);
-    cells.push({ date: d, key: dateKey(d), isOutside: true });
-  }
-  // Current month
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    cells.push({ date: d, key: dateKey(d), isOutside: false });
-  }
-  // Next month fill to complete 42 cells
-  const remaining = 42 - cells.length;
-  for (let day = 1; day <= remaining; day++) {
-    const d = new Date(year, month + 1, day);
-    cells.push({ date: d, key: dateKey(d), isOutside: true });
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    const dateObj = new Date(formDate + "T00:00:00");
+    const begin = formatISO(dateObj, formStart);
+    const end = formatISO(dateObj, formEnd);
+    try {
+      await create.mutateAsync({ begin_at: begin, end_at: end });
+      setShowForm(false);
+    } catch (err: any) {
+      setFormError(err instanceof Error ? err.message : "Failed to create slot");
+    }
   }
 
-  // ── Render ──
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1
-          className="text-base md:text-lg font-bold tracking-widest uppercase"
-          style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}
-        >
+        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
           &gt; SLOTS_
         </h1>
-        <span
-          className="text-xs"
-          style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-        >
-          {slots.length} slots
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+            {slots.length} slots
+          </span>
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all"
+            style={{ background: "var(--color-primary)", color: "#000" }}
+          >
+            {showForm ? "Cancel" : "+ New Slot"}
+          </button>
+          <button
+            onClick={() => window.open("https://profile.intra.42.fr/slots", "_blank")}
+            className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border transition-all"
+            style={{ color: "var(--color-muted)", borderColor: "var(--color-border)" }}
+          >
+            Open on 42 →
+          </button>
+        </div>
       </div>
+
+      {/* Create form */}
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="rounded-xl border p-4 space-y-3 animate-fade-in-up"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-muted)" }}>
+            New Availability Slot
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-faint)" }}>Date</span>
+              <input
+                type="date"
+                value={formDate}
+                onChange={(e) => setFormDate(e.target.value)}
+                className="bg-transparent border rounded-lg px-2.5 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "#e2e8f0" }}
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-faint)" }}>Start</span>
+              <input
+                type="time"
+                value={formStart}
+                onChange={(e) => setFormStart(e.target.value)}
+                className="bg-transparent border rounded-lg px-2.5 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "#e2e8f0" }}
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-faint)" }}>End</span>
+              <input
+                type="time"
+                value={formEnd}
+                onChange={(e) => setFormEnd(e.target.value)}
+                className="bg-transparent border rounded-lg px-2.5 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "#e2e8f0" }}
+                required
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={create.isPending}
+              className="text-xs font-bold px-4 py-1.5 rounded-lg uppercase tracking-wider transition-all disabled:opacity-50"
+              style={{ background: "var(--color-green)", color: "#000" }}
+            >
+              {create.isPending ? "Creating…" : "Create Slot"}
+            </button>
+          </div>
+          {formError && (
+            <div className="text-xs" style={{ color: "var(--color-red)" }}>{formError}</div>
+          )}
+          {create.error && <InsufficientScopeCard error={create.error} />}
+        </form>
+      )}
 
       {/* Loading */}
       {isLoading && (
         <div className="space-y-3">
-          <div className="skeleton h-10 w-48 rounded-lg" />
-          <div className="skeleton h-[420px] w-full rounded-xl" />
+          <div className="skeleton h-8 w-56 rounded-lg" />
+          <div className="skeleton h-[500px] w-full rounded-xl" />
         </div>
       )}
 
@@ -117,28 +200,25 @@ export function SlotsPage() {
       {/* Content */}
       {!isLoading && !error && (
         <>
-          {/* Month navigation */}
+          {/* Week navigation */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <button
-                onClick={prevMonth}
+                onClick={prevWeek}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all hover:bg-card-hi"
                 style={{ color: "var(--color-muted)" }}
-                aria-label="Previous month"
+                aria-label="Previous week"
               >
                 ←
               </button>
-              <h2
-                className="text-sm md:text-base font-bold tracking-wide capitalize"
-                style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}
-              >
-                {monthLabel}
+              <h2 className="text-sm md:text-base font-bold tracking-wide" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+                {weekLabel}
               </h2>
               <button
-                onClick={nextMonth}
+                onClick={nextWeek}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all hover:bg-card-hi"
                 style={{ color: "var(--color-muted)" }}
-                aria-label="Next month"
+                aria-label="Next week"
               >
                 →
               </button>
@@ -146,11 +226,7 @@ export function SlotsPage() {
             <button
               onClick={goToday}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all"
-              style={{
-                color: "var(--color-primary)",
-                borderColor: "var(--color-border)",
-                fontFamily: "var(--font-mono)",
-              }}
+              style={{ color: "var(--color-primary)", borderColor: "var(--color-border)", fontFamily: "var(--font-mono)" }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.background = "var(--color-primary)";
                 (e.currentTarget as HTMLElement).style.color = "#000";
@@ -170,230 +246,124 @@ export function SlotsPage() {
             style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
           >
             {/* Day headers */}
-            <div
-              className="grid grid-cols-7 border-b"
-              style={{ borderColor: "var(--color-border)" }}
-            >
-              {DAY_HEADERS.map((h) => (
-                <div
-                  key={h}
-                  className="py-2.5 text-center text-[10px] font-bold tracking-wider uppercase"
-                  style={{ color: "var(--color-faint)" }}
-                >
-                  {h}
-                </div>
-              ))}
-            </div>
-
-            {/* Day cells */}
-            <div className="grid grid-cols-7">
-              {cells.map((cell, idx) => {
-                const key = cell.key;
-                const hasSlots = slotsByDate.has(key);
-                const count = slotsByDate.get(key)?.length ?? 0;
-                const isToday = cell.date ? sameDay(cell.date, today) : false;
-                const isSelected = selectedDate === key;
-                const isOutside = cell.isOutside || !cell.date;
-                const dayNum = cell.date?.getDate();
-
+            <div className="flex border-b" style={{ borderColor: "var(--color-border)" }}>
+              <div className="w-14 shrink-0" />
+              {days.map(({ date }) => {
+                const isToday = sameDay(date, today);
                 return (
-                  <button
-                    key={`${year}-${month}-${idx}`}
-                    onClick={() => {
-                      if (cell.date && !isOutside) {
-                        setSelectedDate(isSelected ? null : key);
-                      }
-                    }}
-                    className={`
-                      relative flex flex-col items-center pt-1.5 pb-2 md:pt-2 md:pb-2.5 cursor-pointer
-                      transition-all border-r border-b
-                      min-h-[52px] md:min-h-[64px]
-                      ${(idx + 1) % 7 === 0 ? "border-r-0" : ""}
-                      ${idx >= 35 ? "border-b-0" : ""}
-                    `}
-                    style={{
-                      borderColor: "var(--color-border)",
-                      background: isSelected
-                        ? "var(--color-card-hi)"
-                        : isToday
-                          ? "color-mix(in srgb, var(--color-primary) 6%, transparent)"
-                          : "",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        (e.currentTarget as HTMLElement).style.background = "var(--color-card-hi)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        (e.currentTarget as HTMLElement).style.background = isToday
-                          ? "color-mix(in srgb, var(--color-primary) 6%, transparent)"
-                          : "";
-                      }
-                    }}
+                  <div
+                    key={date.toISOString()}
+                    className="flex-1 py-2.5 text-center border-l"
+                    style={{ borderColor: "var(--color-border)" }}
                   >
-                    {/* Day number */}
-                    <span
-                      className={`
-                        text-xs font-bold w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center
-                        ${isToday ? "text-[#000]" : ""}
-                      `}
+                    <div
+                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: isToday ? "var(--color-primary)" : "var(--color-faint)" }}
+                    >
+                      {date.toLocaleDateString("en-US", { weekday: "short" })}
+                    </div>
+                    <div
+                      className={`text-xs font-bold mt-0.5 ${isToday ? "w-6 h-6 rounded-full flex items-center justify-center mx-auto" : ""}`}
                       style={{
-                        color: isOutside ? "var(--color-border-hi)" : isToday ? "" : "var(--color-muted)",
+                        color: isToday ? "#000" : "var(--color-muted)",
                         background: isToday ? "var(--color-primary)" : "",
                       }}
                     >
-                      {dayNum}
-                    </span>
-
-                    {/* Slot dots */}
-                    {hasSlots && !isOutside && (
-                      <div className="flex items-center gap-0.5 mt-0.5">
-                        {count <= 3 ? (
-                          Array.from({ length: count }).map((_, i) => (
-                            <span
-                              key={i}
-                              className="block w-1 h-1 rounded-full"
-                              style={{ background: "var(--color-primary)" }}
-                            />
-                          ))
-                        ) : (
-                          <>
-                            <span className="block w-1 h-1 rounded-full" style={{ background: "var(--color-primary)" }} />
-                            <span className="block w-1 h-1 rounded-full" style={{ background: "var(--color-primary)" }} />
-                            <span className="block w-1 h-1 rounded-full" style={{ background: "var(--color-purple)" }} />
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </button>
+                      {date.getDate()}
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </div>
 
-          {/* Selected day detail */}
-          {selectedDate && (
-            <div
-              className="rounded-xl border p-4 md:p-5 space-y-3 animate-fade-in-up"
-              style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <h3
-                  className="text-xs font-bold tracking-wider uppercase"
-                  style={{ fontFamily: "var(--font-mono)", color: "var(--color-primary)" }}
-                >
-                  {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </h3>
-                <span
-                  className="text-[10px] font-mono"
-                  style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-                >
-                  {selectedSlots.length} slot{selectedSlots.length !== 1 ? "s" : ""}
-                </span>
-              </div>
+            {/* Scrollable time grid */}
+            <div className="overflow-y-auto" style={{ maxHeight: "520px" }}>
+              <div className="flex">
+                {/* Time labels */}
+                <div className="w-14 shrink-0" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
+                  {HOURS.map((h) => (
+                    <div
+                      key={h}
+                      className="text-[10px] font-mono text-right pr-2 pt-0.5"
+                      style={{ height: `${HOUR_HEIGHT}px`, color: "var(--color-faint)" }}
+                    >
+                      {h === 0 ? "12 am" : h < 12 ? `${h} am` : h === 12 ? "12 pm" : `${h - 12} pm`}
+                    </div>
+                  ))}
+                </div>
 
-              {selectedSlots.length === 0 && (
-                <p className="text-xs" style={{ color: "var(--color-faint)" }}>
-                  No slots for this day.
-                </p>
-              )}
+                {/* Day columns */}
+                {days.map(({ date, daySlots }) => (
+                  <div
+                    key={date.toISOString()}
+                    className="flex-1 relative border-l"
+                    style={{ height: `${24 * HOUR_HEIGHT}px`, borderColor: "var(--color-border)" }}
+                  >
+                    {/* Hour grid lines */}
+                    {HOURS.map((h) => (
+                      <div
+                        key={h}
+                        className="border-b"
+                        style={{ height: `${HOUR_HEIGHT}px`, borderColor: "var(--color-border)", opacity: h % 6 === 0 ? 1 : 0.4 }}
+                      />
+                    ))}
 
-              <div className="space-y-1.5">
-                {selectedSlots.map((slot, i) => (
-                  <SlotCard key={slot.id} slot={slot} index={i} onOpen={() => openSlot(slot.id)} />
+                    {/* Slot blocks */}
+                    {daySlots.map((slot) => {
+                      const begin = new Date(slot.begin_at);
+                      const end = new Date(slot.end_at);
+                      const style = slotStyle(begin, end);
+                      const scaleName = slot.scale_team?.scale?.name;
+                      return (
+                        <div
+                          key={slot.id}
+                          className="absolute left-0.5 right-0.5 rounded-md border px-1.5 py-1 text-[10px] flex flex-col justify-between overflow-hidden"
+                          style={{
+                            ...style,
+                            background: "color-mix(in srgb, var(--color-primary) 15%, var(--color-card))",
+                            borderColor: "var(--color-primary)",
+                            color: "#e2e8f0",
+                          }}
+                          title={`${begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${scaleName ? "\n" + scaleName : ""}`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-semibold truncate" style={{ fontFamily: "var(--font-mono)" }}>
+                              {begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              {" – "}
+                              {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            <button
+                              onClick={() => {
+                                if (confirm("Delete this slot?")) del.mutate(slot.id);
+                              }}
+                              disabled={del.isPending}
+                              className="shrink-0 w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold transition-all hover:bg-red-500/20"
+                              style={{ color: "var(--color-red)" }}
+                              title="Delete slot"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <span className="truncate" style={{ color: "var(--color-muted)" }}>
+                            {scaleName ?? "Available"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ))}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Empty state */}
           {!isLoading && slots.length === 0 && (
-            <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
-              No slots found
+            <p className="text-xs text-center py-8" style={{ color: "var(--color-faint)" }}>
+              No slots this week. Click "+ New Slot" to create one.
             </p>
           )}
         </>
       )}
-    </div>
-  );
-}
-
-function SlotCard({ slot, index, onOpen }: { slot: Slot; index: number; onOpen: () => void }) {
-  const begin = new Date(slot.begin_at);
-  const end = new Date(slot.end_at);
-  const now = new Date();
-  const isPast = end < now;
-  const isLive = begin <= now && end >= now;
-  const scaleName = slot.scale_team?.scale?.name;
-
-  return (
-    <div
-      className={`
-        rounded-lg border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap
-        animate-fade-in-up
-      `}
-      style={{
-        background: "var(--color-card-hi)",
-        borderColor: "var(--color-border)",
-        animationDelay: `${index * 0.05}s`,
-      }}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Status dot */}
-        <div
-          className="w-2 h-2 rounded-full shrink-0"
-          style={{
-            background: isLive ? "var(--color-green)" : isPast ? "var(--color-faint)" : "var(--color-primary)",
-          }}
-        />
-
-        <div className="min-w-0">
-          <div className="text-xs font-semibold truncate" style={{ color: "#e2e8f0" }}>
-            {scaleName ?? `Slot #${slot.id}`}
-          </div>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span
-              className="text-[10px] font-mono"
-              style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}
-            >
-              {begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              {" — "}
-              {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            {slot.user?.login && (
-              <span className="text-[10px]" style={{ color: "var(--color-faint)" }}>
-                {slot.user.login}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={onOpen}
-        className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all shrink-0"
-        style={{
-          color: "var(--color-primary)",
-          borderColor: "var(--color-border)",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.background = "var(--color-primary)";
-          (e.currentTarget as HTMLElement).style.color = "#000";
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-primary)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.background = "";
-          (e.currentTarget as HTMLElement).style.color = "var(--color-primary)";
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)";
-        }}
-      >
-        OPEN
-      </button>
     </div>
   );
 }
