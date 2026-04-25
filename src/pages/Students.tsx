@@ -25,6 +25,15 @@ function useDebounce<T>(value: T, ms: number): T {
   return deb;
 }
 
+const USER_API_SORTS = new Set(["login", "-login", "created_at", "-created_at"]);
+
+function selectedCursusUser(user: FortyTwoUser, cursusId: string) {
+  const id = Number(cursusId);
+  return (id ? user.cursus_users?.find(c => c.cursus_id === id) : undefined)
+    ?? user.cursus_users?.find(c => c.cursus_id === 21)
+    ?? user.cursus_users?.[user.cursus_users.length - 1];
+}
+
 export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
   // ── Filter state ──────────────────────────────────────────────────────────
   const [search,    setSearch]    = useState("");
@@ -54,26 +63,44 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   }
 
   // ── Query params — derived, stable object ─────────────────────────────────
+  const studentsPath = cursusId ? `/cursus/${cursusId}/users` : "/users";
+  const apiSort = USER_API_SORTS.has(sort) ? sort : undefined;
+
   const params = useMemo(() => ({
     "page.number": page,
     "page.size":   PAGE_SIZE,
-    sort,
-    ...(campusId            && { "filter.campus_id":  campusId }),
-    ...(cursusId            && { "filter.cursus_id":  cursusId }),
-    ...(onlineOnly          && { "filter.location":   "active" }),
+    ...(apiSort             && { sort: apiSort }),
+    ...(campusId            && { "filter.primary_campus_id":  campusId }),
     ...(debouncedSearch     && { "filter.login":      debouncedSearch }),
-    ...((levelMin > 0 || levelMax < 21) && {
-      "range.cursus_users.level": `${levelMin},${levelMax}`,
-    }),
-  }), [page, sort, campusId, cursusId, onlineOnly, debouncedSearch, levelMin, levelMax]);
+  }), [page, apiSort, campusId, debouncedSearch]);
 
   // ── Data — one query, no manual effects ───────────────────────────────────
   const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
   const { data: cursusRes }  = use42Query<Cursus[]>("/cursus",  { "page.size": 100, sort: "name" });
-  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[]>("/users", params);
+  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[]>(studentsPath, params);
 
-  const students = studentsRes?.data ?? [];
-  const total    = studentsRes?.total ?? 0;
+  const students = useMemo(() => {
+    const rows = studentsRes?.data ?? [];
+    const filtered = rows.filter(user => {
+      const cursusUser = selectedCursusUser(user, cursusId);
+      const level = cursusUser?.level ?? 0;
+      if (onlineOnly && !user.location) return false;
+      return level >= levelMin && level <= levelMax;
+    });
+
+    if (sort === "level" || sort === "-level") {
+      return [...filtered].sort((a, b) => {
+        const aLevel = selectedCursusUser(a, cursusId)?.level ?? 0;
+        const bLevel = selectedCursusUser(b, cursusId)?.level ?? 0;
+        return sort === "level" ? aLevel - bLevel : bLevel - aLevel;
+      });
+    }
+
+    return filtered;
+  }, [studentsRes?.data, cursusId, levelMin, levelMax, onlineOnly, sort]);
+
+  const usesLocalFilters = onlineOnly || levelMin > 0 || levelMax < 21;
+  const total    = usesLocalFilters ? students.length : studentsRes?.total ?? 0;
   const campuses = campusRes?.data ?? [];
   const cursuses = cursusRes?.data ?? [];
 
