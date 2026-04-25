@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { use42API } from "../hooks/use42API";
+import { use42Query } from "../hooks/use42API";
 import { useAuth } from "../context/AuthContext";
 import { LevelBar } from "../components/LevelBar";
 import { SkeletonCard } from "../components/Loading";
@@ -127,7 +127,9 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   const { user } = useAuth();
 
   // Load campuses
-  const { data: campuses } = use42API<Campus[]>("/campus", { "page.size": 100, sort: "name" });
+  const { data: campusRes } = use42Query<Campus[]>("/campus", { "page.size": 100, sort: "name" });
+  const campuses = campusRes?.data ?? [];
+
   const defaultCampus = user?.campus_users?.find(c => c.is_primary)?.campus_id;
   const [campusId, setCampusId] = useState<number | null>(null);
 
@@ -136,7 +138,7 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
     if (defaultCampus && campusId === null) setCampusId(defaultCampus);
   }, [defaultCampus, campusId]);
 
-  // Auto-refresh
+  // Auto-refresh tick — only used to bust the query key, no manual fetch calls
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [countdown, setCountdown]     = useState(30);
   const [tick, setTick]               = useState(0);
@@ -154,14 +156,14 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
     return () => { if (cdRef.current) clearInterval(cdRef.current); };
   }, [autoRefresh, tick]);
 
-  // Locations data
-  const { data: locations, loading, refetch } = use42API<Location[]>(
+  // Locations data — tick in params busts the React Query cache on each refresh cycle
+  const { data: locRes, isLoading, refetch } = use42Query<Location[]>(
     campusId ? `/campus/${campusId}/locations` : null,
-    { "filter.active": true, "page.size": 100 },
-    [campusId, tick]
+    { "filter.active": true, "page.size": 100, _tick: tick }
   );
 
-  const selectedCampus = campuses?.find(c => c.id === campusId);
+  const locations = locRes?.data;
+  const selectedCampus = campuses.find(c => c.id === campusId);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-5">
@@ -174,7 +176,7 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
         {/* Auto-refresh toggle */}
         <div className="flex items-center gap-3">
           <button
-            onClick={refetch}
+            onClick={() => refetch()}
             className="text-xs px-3 py-1.5 rounded-lg border transition-all font-semibold"
             style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
           >
@@ -221,7 +223,7 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
               className="w-full text-sm"
             >
               <option value="">Select a campus…</option>
-              {(campuses ?? []).map(c => (
+              {campuses.map(c => (
                 <option key={c.id} value={c.id}>{c.name} — {c.city}, {c.country}</option>
               ))}
             </select>
@@ -260,7 +262,7 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
           <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◎</div>
           <div className="text-sm" style={{ color: "var(--color-faint)" }}>Select a campus to see who's online</div>
         </div>
-      ) : loading ? (
+      ) : isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 20 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>

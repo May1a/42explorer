@@ -1,8 +1,7 @@
 import { useAuth } from "../context/AuthContext";
-import { use42API } from "../hooks/use42API";
+import { use42Query } from "../hooks/use42API";
 import { LevelBar } from "../components/LevelBar";
 import { CoalitionBadge } from "../components/CoalitionBadge";
-import { SkeletonCard } from "../components/Loading";
 import type { FortyTwoUser, Location } from "../types";
 
 interface StatTileProps { label: string; value: string | number; sub?: string; color?: string }
@@ -31,16 +30,19 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
 
   // Active locations at primary campus
   const campusId = user?.campus_users?.find(c => c.is_primary)?.campus_id;
-  const { data: locations, loading: locLoading } = use42API<Location[]>(
+  const { data: locRes, isLoading: locLoading } = use42Query<Location[]>(
     campusId ? `/campus/${campusId}/locations` : null,
     { "filter.active": true, "page.size": 100 }
   );
 
   // Upcoming events at campus
-  const { data: events } = use42API<any[]>(
+  const { data: eventsRes } = use42Query<any[]>(
     campusId ? `/campus/${campusId}/events` : null,
     { "page.size": 5, sort: "begin_at" }
   );
+
+  const locations = locRes?.data;
+  const events    = eventsRes?.data;
 
   if (!user) {
     return (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { use42API } from "../hooks/use42API";
+import { use42Query } from "../hooks/use42API";
 import { useAuth } from "../context/AuthContext";
 import { LevelBar, BigLevel } from "../components/LevelBar";
 import { CoalitionBadge } from "../components/CoalitionBadge";
@@ -7,7 +7,7 @@ import { SkillsRadar } from "../components/SkillsRadar";
 import { FullPageSpinner } from "../components/Loading";
 import type { FortyTwoUser, ProjectUser, Achievement } from "../types";
 
-type Tab = "projects" | "skills" | "achievements" | "evaluations";
+type Tab = "projects" | "skills" | "achievements";
 
 const STATUS_STYLE: Record<string, { label: string; color: string }> = {
   finished:             { label: "Finished",    color: "var(--color-muted)" },
@@ -101,7 +101,7 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
 
 function AchievementsTab({ achievements }: { achievements: Achievement[] }) {
   const sorted = [...achievements].sort((a, b) => {
-    const order = { challenge: 0, hard: 1, medium: 2, easy: 3, bonus: 4 };
+    const order: Record<string, number> = { challenge: 0, hard: 1, medium: 2, easy: 3, bonus: 4 };
     return (order[a.tier] ?? 5) - (order[b.tier] ?? 5);
   });
 
@@ -184,9 +184,11 @@ export function ProfilePage({
   const targetLogin = loginProp || me?.login;
   const [tab, setTab] = useState<Tab>("projects");
 
-  const { data: user, loading, error } = use42API<FortyTwoUser>(
+  const { data: res, isLoading, error } = use42Query<FortyTwoUser>(
     targetLogin ? `/users/${targetLogin}` : null
   );
+
+  const user = res?.data;
 
   if (!targetLogin) {
     return (
@@ -204,13 +206,13 @@ export function ProfilePage({
     );
   }
 
-  if (loading) return <FullPageSpinner />;
+  if (isLoading) return <FullPageSpinner />;
 
   if (error || !user) {
     return (
       <div className="flex flex-col items-center gap-4 p-12 text-center">
         <div className="text-4xl" style={{ color: "var(--color-red)" }}>✕</div>
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>{error ?? "Profile not found"}</p>
+        <p className="text-sm" style={{ color: "var(--color-muted)" }}>{error?.message ?? "Profile not found"}</p>
       </div>
     );
   }
@@ -220,7 +222,6 @@ export function ProfilePage({
   const selectedTitle = user.titles_users?.find(t => t.selected);
   const title = selectedTitle ? user.titles?.find(t => t.id === selectedTitle.title_id) : null;
   const primaryCampus = user.campus?.[0];
-  const validatedCount = user.projects_users?.filter(p => p["validated?"] === true).length ?? 0;
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: "projects",     label: "Projects",     count: user.projects_users?.length },

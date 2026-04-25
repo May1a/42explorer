@@ -1,97 +1,81 @@
-import { useState, useEffect, useCallback } from "react";
-import { useAPI42Fetcher } from "../hooks/use42API";
-import { use42API } from "../hooks/use42API";
+import { useState, useEffect, useMemo } from "react";
+import { use42Query } from "../hooks/use42API";
 import { StudentCard } from "../components/StudentCard";
 import { Pagination } from "../components/Pagination";
 import { SkeletonCard } from "../components/Loading";
 import type { FortyTwoUser, Campus, Cursus } from "../types";
 
 const PAGE_SIZE = 20;
+
 const SORT_OPTIONS = [
-  { value: "-cursus_users.level", label: "Level (High → Low)" },
-  { value: "cursus_users.level",  label: "Level (Low → High)" },
-  { value: "login",               label: "Login A → Z" },
-  { value: "-login",              label: "Login Z → A" },
-  { value: "-created_at",         label: "Newest first" },
-  { value: "created_at",          label: "Oldest first" },
+  { value: "-level",      label: "Level (High → Low)" },
+  { value: "level",       label: "Level (Low → High)" },
+  { value: "login",       label: "Login A → Z" },
+  { value: "-login",      label: "Login Z → A" },
+  { value: "-created_at", label: "Newest first" },
+  { value: "created_at",  label: "Oldest first" },
 ];
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
+function useDebounce<T>(value: T, ms: number): T {
+  const [deb, setDeb] = useState(value);
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
+    const id = setTimeout(() => setDeb(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return deb;
 }
 
 export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
-  const fetch42 = useAPI42Fetcher();
-
-  const [students, setStudents] = useState<FortyTwoUser[]>([]);
-  const [total,    setTotal]    = useState(0);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
-
-  // Filters
+  // ── Filter state ──────────────────────────────────────────────────────────
   const [search,    setSearch]    = useState("");
-  const [campusId,  setCampusId]  = useState<string>("");
-  const [cursusId,  setCursusId]  = useState<string>("21"); // 42cursus default
+  const [campusId,  setCampusId]  = useState("");
+  const [cursusId,  setCursusId]  = useState("21");
   const [levelMin,  setLevelMin]  = useState(0);
   const [levelMax,  setLevelMax]  = useState(21);
   const [onlineOnly, setOnlineOnly] = useState(false);
-  const [sort,      setSort]      = useState("-cursus_users.level");
+  const [sort,      setSort]      = useState("-level");
   const [page,      setPage]      = useState(1);
 
   const debouncedSearch = useDebounce(search, 400);
 
-  // Load campus + cursus lists
-  const { data: campuses } = use42API<Campus[]>("/campus", { "page.size": 100, sort: "name" });
-  const { data: cursuses } = use42API<Cursus[]>("/cursus", { "page.size": 100, sort: "name" });
-
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, any> = {
-        "page.number": page,
-        "page.size":   PAGE_SIZE,
-        sort,
-      };
-      if (campusId)  params["filter.campus_id"]  = campusId;
-      if (cursusId)  params["filter.cursus_id"]  = cursusId;
-      if (onlineOnly) params["filter.location"]  = "active";
-      if (debouncedSearch) {
-        params["filter.login"] = debouncedSearch;
-      }
-      if (levelMin > 0 || levelMax < 21) {
-        params["range.cursus_users.level"] = `${levelMin},${levelMax}`;
-      }
-
-      const { data, total } = await fetch42<FortyTwoUser[]>("/users", params);
-      setStudents(data);
-      setTotal(total);
-    } catch (e: any) {
-      setError(e.message);
-    }
-    setLoading(false);
-  }, [fetch42, page, sort, campusId, cursusId, onlineOnly, debouncedSearch, levelMin, levelMax]);
-
-  useEffect(() => { fetchStudents(); }, [fetchStudents]);
-
-  // Reset to page 1 on filter change
-  useEffect(() => { setPage(1); }, [debouncedSearch, campusId, cursusId, onlineOnly, levelMin, levelMax, sort]);
+  // Every handler resets page — no useEffect needed
+  function handleSearch(v: string)      { setSearch(v);    setPage(1); }
+  function handleCampus(v: string)      { setCampusId(v);  setPage(1); }
+  function handleCursus(v: string)      { setCursusId(v);  setPage(1); }
+  function handleSort(v: string)        { setSort(v);      setPage(1); }
+  function handleOnline(v: boolean)     { setOnlineOnly(v); setPage(1); }
+  function handleLevelMin(v: number)    { setLevelMin(v);  setPage(1); }
+  function handleLevelMax(v: number)    { setLevelMax(v);  setPage(1); }
 
   function clearFilters() {
-    setSearch("");
-    setCampusId("");
-    setCursusId("21");
-    setLevelMin(0);
-    setLevelMax(21);
-    setOnlineOnly(false);
-    setSort("-cursus_users.level");
-    setPage(1);
+    setSearch(""); setCampusId(""); setCursusId("21");
+    setLevelMin(0); setLevelMax(21); setOnlineOnly(false);
+    setSort("-level"); setPage(1);
   }
+
+  // ── Query params — derived, stable object ─────────────────────────────────
+  const params = useMemo(() => ({
+    "page.number": page,
+    "page.size":   PAGE_SIZE,
+    sort,
+    ...(campusId            && { "filter.campus_id":  campusId }),
+    ...(cursusId            && { "filter.cursus_id":  cursusId }),
+    ...(onlineOnly          && { "filter.location":   "active" }),
+    ...(debouncedSearch     && { "filter.login":      debouncedSearch }),
+    ...((levelMin > 0 || levelMax < 21) && {
+      "range.cursus_users.level": `${levelMin},${levelMax}`,
+    }),
+  }), [page, sort, campusId, cursusId, onlineOnly, debouncedSearch, levelMin, levelMax]);
+
+  // ── Data — one query, no manual effects ───────────────────────────────────
+  const { data: campusRes }  = use42Query<Campus[]>("/campus",  { "page.size": 100, sort: "name" });
+  const { data: cursusRes }  = use42Query<Cursus[]>("/cursus",  { "page.size": 100, sort: "name" });
+  const { data: studentsRes, isLoading, error } = use42Query<FortyTwoUser[]>("/users", params);
+
+  const students = studentsRes?.data ?? [];
+  const total    = studentsRes?.total ?? 0;
+  const campuses = campusRes?.data ?? [];
+  const cursuses = cursusRes?.data ?? [];
 
   const hasFilters = Boolean(search || campusId || cursusId !== "21" || levelMin > 0 || levelMax < 21 || onlineOnly);
 
@@ -110,16 +94,13 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
       </div>
 
       {/* Filter panel */}
-      <div
-        className="rounded-2xl border p-5 space-y-4"
-        style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-      >
+      <div className="rounded-2xl border p-5 space-y-4" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
         {/* Search */}
         <div className="flex gap-3">
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => handleSearch(e.target.value)}
             placeholder="◈  Search by login or display name..."
             className="flex-1"
             style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
@@ -135,66 +116,36 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
           )}
         </div>
 
-        {/* Filters row */}
+        {/* Dropdowns */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* Campus */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Campus
-            </label>
-            <select value={campusId} onChange={e => setCampusId(e.target.value)} className="w-full text-xs">
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Campus</label>
+            <select value={campusId} onChange={e => handleCampus(e.target.value)} className="w-full text-xs">
               <option value="">All campuses</option>
-              {(campuses ?? []).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-
-          {/* Cursus */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Cursus
-            </label>
-            <select value={cursusId} onChange={e => setCursusId(e.target.value)} className="w-full text-xs">
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Cursus</label>
+            <select value={cursusId} onChange={e => handleCursus(e.target.value)} className="w-full text-xs">
               <option value="">All cursus</option>
-              {(cursuses ?? []).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {cursuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-
-          {/* Sort */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Sort by
-            </label>
-            <select value={sort} onChange={e => setSort(e.target.value)} className="w-full text-xs">
-              {SORT_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Sort by</label>
+            <select value={sort} onChange={e => handleSort(e.target.value)} className="w-full text-xs">
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
-
-          {/* Online only */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Status
-            </label>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
             <button
-              onClick={() => setOnlineOnly(v => !v)}
+              onClick={() => handleOnline(!onlineOnly)}
               className="w-full py-2 px-3 rounded-lg border text-xs font-semibold text-left transition-all"
-              style={
-                onlineOnly
-                  ? {
-                      background: "color-mix(in srgb, var(--color-green) 12%, transparent)",
-                      borderColor: "var(--color-green)",
-                      color: "var(--color-green)",
-                    }
-                  : {
-                      borderColor: "var(--color-border)",
-                      color: "var(--color-faint)",
-                    }
-              }
+              style={onlineOnly
+                ? { background: "color-mix(in srgb, var(--color-green) 12%, transparent)", borderColor: "var(--color-green)", color: "var(--color-green)" }
+                : { borderColor: "var(--color-border)", color: "var(--color-faint)" }}
             >
               {onlineOnly ? "● Online only" : "○ Show all"}
             </button>
@@ -204,9 +155,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         {/* Level range */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>
-              Level range
-            </label>
+            <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>Level range</label>
             <span className="text-xs font-mono" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
               {levelMin} – {levelMax}
             </span>
@@ -214,47 +163,29 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Min</div>
-              <input
-                type="range" min={0} max={21} step={0.5}
-                value={levelMin}
-                onChange={e => setLevelMin(Math.min(Number(e.target.value), levelMax))}
-              />
+              <input type="range" min={0} max={21} step={0.5} value={levelMin}
+                onChange={e => handleLevelMin(Math.min(Number(e.target.value), levelMax))} />
             </div>
             <div>
               <div className="text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Max</div>
-              <input
-                type="range" min={0} max={21} step={0.5}
-                value={levelMax}
-                onChange={e => setLevelMax(Math.max(Number(e.target.value), levelMin))}
-              />
+              <input type="range" min={0} max={21} step={0.5} value={levelMax}
+                onChange={e => handleLevelMax(Math.max(Number(e.target.value), levelMin))} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error */}
       {error && (
-        <div
-          className="flex items-center gap-3 p-4 rounded-xl border-l-4"
-          style={{
-            background: "color-mix(in srgb, var(--color-red) 8%, transparent)",
-            borderLeftColor: "var(--color-red)",
-          }}
-        >
+        <div className="flex items-center gap-3 p-4 rounded-xl border-l-4"
+          style={{ background: "color-mix(in srgb, var(--color-red) 8%, transparent)", borderLeftColor: "var(--color-red)" }}>
           <span style={{ color: "var(--color-red)" }}>✕</span>
-          <span className="text-sm" style={{ color: "var(--color-muted)" }}>{error}</span>
-          <button
-            onClick={fetchStudents}
-            className="ml-auto text-xs font-semibold px-3 py-1 rounded-lg border transition-all"
-            style={{ borderColor: "var(--color-red)", color: "var(--color-red)" }}
-          >
-            Retry
-          </button>
+          <span className="text-sm" style={{ color: "var(--color-muted)" }}>{error.message}</span>
         </div>
       )}
 
       {/* Results */}
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
@@ -262,31 +193,21 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◈</div>
           <div className="text-sm" style={{ color: "var(--color-faint)" }}>No students found</div>
-          <button
-            onClick={clearFilters}
-            className="text-xs px-4 py-2 rounded-lg border transition-all"
-            style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
-          >
-            Clear all filters
-          </button>
+          {hasFilters && (
+            <button onClick={clearFilters} className="text-xs px-4 py-2 rounded-lg border transition-all"
+              style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}>
+              Clear all filters
+            </button>
+          )}
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {students.map(student => (
-              <StudentCard
-                key={student.id}
-                user={student}
-                onClick={() => onNavigate("profile", student.login)}
-              />
+            {students.map(s => (
+              <StudentCard key={s.id} user={s} onClick={() => onNavigate("profile", s.login)} />
             ))}
           </div>
-          <Pagination
-            page={page}
-            perPage={PAGE_SIZE}
-            total={total}
-            onChange={setPage}
-          />
+          <Pagination page={page} perPage={PAGE_SIZE} total={total} onChange={setPage} />
         </>
       )}
     </div>
