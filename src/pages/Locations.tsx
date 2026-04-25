@@ -125,6 +125,7 @@ function LocationCard({
 
 export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
   const { user } = useAuth();
+  const [search, setSearch] = useState("");
 
   // Load campuses
   const { data: campusRes } = use42Query<Campus[]>("/campus", { "page.size": 100, sort: "name" });
@@ -163,6 +164,15 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   );
 
   const locations = locRes?.data;
+  const filteredLocations = locations?.filter(loc => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return true;
+    return [
+      loc.user.login,
+      loc.user.displayname,
+      loc.host,
+    ].some(value => value?.toLowerCase().includes(needle));
+  });
   const selectedCampus = campuses.find(c => c.id === campusId);
 
   return (
@@ -228,6 +238,19 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
               ))}
             </select>
           </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
+              Search
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="◈  Login, name, or host..."
+              className="w-full text-sm"
+              style={{ fontFamily: "var(--font-mono)" }}
+            />
+          </div>
 
           {/* Online count badge */}
           {locations && campusId && (
@@ -245,7 +268,7 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
                   className="text-xl font-black"
                   style={{ color: "var(--color-green)", fontFamily: "var(--font-mono)" }}
                 >
-                  {locations.length}
+                  {filteredLocations?.length ?? 0}
                 </div>
                 <div className="text-xs" style={{ color: "var(--color-faint)" }}>
                   online at {selectedCampus?.name}
@@ -271,9 +294,14 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
           <div className="text-4xl" style={{ color: "var(--color-faint)" }}>○</div>
           <div className="text-sm" style={{ color: "var(--color-faint)" }}>No one online at {selectedCampus?.name} right now</div>
         </div>
+      ) : !filteredLocations?.length ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <div className="text-4xl" style={{ color: "var(--color-faint)" }}>○</div>
+          <div className="text-sm" style={{ color: "var(--color-faint)" }}>No online peers match your search</div>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {locations.map(loc => (
+          {filteredLocations.map(loc => (
             <LocationCard
               key={loc.id}
               loc={loc}

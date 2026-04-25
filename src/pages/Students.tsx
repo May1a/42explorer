@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { use42Query } from "../hooks/use42API";
+import { useAuth } from "../context/AuthContext";
 import { StudentCard } from "../components/StudentCard";
 import { Pagination } from "../components/Pagination";
 import { SkeletonCard } from "../components/Loading";
@@ -35,10 +36,14 @@ function selectedCursusUser(user: FortyTwoUser, cursusId: string) {
 }
 
 export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
+  const { user } = useAuth();
+  const primaryCampusId = user?.campus_users?.find(c => c.is_primary)?.campus_id.toString() ?? "";
+
   // ── Filter state ──────────────────────────────────────────────────────────
   const [search,    setSearch]    = useState("");
   const [campusId,  setCampusId]  = useState("");
-  const [cursusId,  setCursusId]  = useState("21");
+  const [campusReady, setCampusReady] = useState(false);
+  const [cursusId,  setCursusId]  = useState("");
   const [levelMin,  setLevelMin]  = useState(0);
   const [levelMax,  setLevelMax]  = useState(21);
   const [onlineOnly, setOnlineOnly] = useState(false);
@@ -47,9 +52,16 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
 
   const debouncedSearch = useDebounce(search, 400);
 
+  useEffect(() => {
+    if (primaryCampusId && !campusReady) {
+      setCampusId(primaryCampusId);
+      setCampusReady(true);
+    }
+  }, [primaryCampusId, campusReady]);
+
   // Every handler resets page — no useEffect needed
   function handleSearch(v: string)      { setSearch(v);    setPage(1); }
-  function handleCampus(v: string)      { setCampusId(v);  setPage(1); }
+  function handleCampus(v: string)      { setCampusId(v); setCampusReady(true); setPage(1); }
   function handleCursus(v: string)      { setCursusId(v);  setPage(1); }
   function handleSort(v: string)        { setSort(v);      setPage(1); }
   function handleOnline(v: boolean)     { setOnlineOnly(v); setPage(1); }
@@ -57,7 +69,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   function handleLevelMax(v: number)    { setLevelMax(v);  setPage(1); }
 
   function clearFilters() {
-    setSearch(""); setCampusId(""); setCursusId("21");
+    setSearch(""); setCampusId(primaryCampusId); setCampusReady(true); setCursusId("");
     setLevelMin(0); setLevelMax(21); setOnlineOnly(false);
     setSort("-level"); setPage(1);
   }
@@ -104,7 +116,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const campuses = campusRes?.data ?? [];
   const cursuses = cursusRes?.data ?? [];
 
-  const hasFilters = Boolean(search || campusId || cursusId !== "21" || levelMin > 0 || levelMax < 21 || onlineOnly);
+  const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || levelMin > 0 || levelMax < 21 || onlineOnly);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-5">
