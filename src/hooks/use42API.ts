@@ -29,7 +29,8 @@ export async function fetch42<T>(
   params: Params | undefined,
   token: string
 ): Promise<API42Result<T>> {
-  const url = new URL(`/api/42${path}`, window.location.origin);
+  const url = new URL("/api/42", window.location.origin);
+  url.searchParams.set("path", path);
   toSearchParams(params).forEach((v, k) => url.searchParams.set(k, v));
 
   const res = await fetch(url.toString(), {
