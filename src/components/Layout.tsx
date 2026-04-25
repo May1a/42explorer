@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export type Page = "dashboard" | "students" | "locations" | "profile";
@@ -24,16 +24,62 @@ function formatLevel(cursusUsers: any[]): string {
 
 export function Layout({ page, onNavigate, children }: Props) {
   const { user, login, logout, config } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+  }
+
+  function handleNavigate(page: Page, extra?: string) {
+    onNavigate(page, extra);
+    closeSidebar();
+  }
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [sidebarOpen]);
 
   return (
     <div className="flex h-full overflow-hidden">
+      {/* Hamburger button — fixed position, mobile only */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-30 flex flex-col items-center justify-center gap-[5px] w-10 h-10 rounded-lg"
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-hi)" }}
+        aria-label="Open navigation"
+      >
+        <span className="block w-[18px] h-[2px] rounded-full" style={{ background: "var(--color-muted)" }} />
+        <span className="block w-[18px] h-[2px] rounded-full" style={{ background: "var(--color-muted)" }} />
+        <span className="block w-[18px] h-[2px] rounded-full" style={{ background: "var(--color-muted)" }} />
+      </button>
+
+      {/* Backdrop overlay — mobile only */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
       {/* ── Sidebar ── */}
       <aside
-        className="w-[220px] shrink-0 flex flex-col overflow-hidden border-r"
+        className={
+          `w-[220px] shrink-0 flex flex-col overflow-hidden border-r
+           md:relative md:translate-x-0
+           max-md:fixed max-md:left-0 max-md:top-0 max-md:bottom-0 max-md:z-50 max-md:will-change-transform
+           max-md:transition-transform max-md:duration-300 max-md:ease-out
+           ${sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"}`
+        }
         style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
       >
-        {/* Logo */}
-        <div className="px-5 pt-5 pb-4">
+        {/* Logo + mobile close button */}
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
           <div
             className="flex items-center gap-2"
             style={{ fontFamily: "var(--font-mono)", color: "var(--color-primary)" }}
@@ -44,6 +90,18 @@ export function Layout({ page, onNavigate, children }: Props) {
               <div className="text-[10px] opacity-50 tracking-widest">NETWORK</div>
             </div>
           </div>
+          <button
+            onClick={closeSidebar}
+            className="md:hidden p-1.5 rounded-lg transition-colors flex items-center justify-center"
+            style={{ color: "var(--color-muted)" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--color-card-hi)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "")}
+            aria-label="Close navigation"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         <div className="mx-3 h-px" style={{ background: "var(--color-border)" }} />
@@ -55,7 +113,7 @@ export function Layout({ page, onNavigate, children }: Props) {
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id)}
+                onClick={() => handleNavigate(item.id)}
                 className="flex items-center gap-2.5 mx-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left"
                 style={
                   active
@@ -104,7 +162,7 @@ export function Layout({ page, onNavigate, children }: Props) {
           {user ? (
             <>
               <button
-                onClick={() => onNavigate("profile")}
+                onClick={() => handleNavigate("profile")}
                 className="flex items-center gap-2.5 w-full p-2 rounded-lg mb-2 transition-all"
                 style={{ color: "#e2e8f0" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "var(--color-card-hi)")}
@@ -145,7 +203,7 @@ export function Layout({ page, onNavigate, children }: Props) {
             </>
           ) : (
             <button
-              onClick={config?.clientId ? login : () => onNavigate("dashboard")}
+              onClick={config?.clientId ? login : () => handleNavigate("dashboard")}
               className="w-full py-2 text-xs font-bold rounded-lg transition-all"
               style={{ background: "var(--color-primary)", color: "#000" }}
             >
@@ -156,7 +214,7 @@ export function Layout({ page, onNavigate, children }: Props) {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: "var(--color-bg)" }}>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pt-12 md:pt-0" style={{ background: "var(--color-bg)" }}>
         {children}
       </main>
     </div>

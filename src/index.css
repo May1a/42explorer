@@ -22,6 +22,9 @@
   html, body, #root {
     @apply h-full;
   }
+  html {
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-bg text-[#e2e8f0] antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -68,6 +71,19 @@
   td { @apply py-3 px-4 border-b border-border text-sm; }
   tr:last-child td { @apply border-0; }
   tbody tr:hover { @apply bg-card-hi; }
+
+  /* Mobile-friendly tap targets */
+  @media (max-width: 767px) {
+    select {
+      @apply py-2.5 text-base;
+      min-height: 40px;
+    }
+    input:not([type=range]),
+    textarea {
+      @apply py-2.5 text-base;
+      min-height: 40px;
+    }
+  }
 }
 
 /* Online pulse animation */

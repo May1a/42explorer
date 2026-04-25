@@ -28,7 +28,7 @@ export function Pagination({ page, perPage, total, onChange }: Props) {
       onClick={() => !disabled && onChange(target)}
       disabled={disabled}
       className={[
-        "min-w-[34px] h-[34px] flex items-center justify-center rounded-lg text-sm font-medium transition-all",
+        "min-w-[34px] h-[34px] md:min-w-[34px] md:h-[34px] flex items-center justify-center rounded-lg text-xs md:text-sm font-medium transition-all",
         active
           ? "bg-primary text-black font-bold"
           : disabled

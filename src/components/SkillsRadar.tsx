@@ -44,7 +44,7 @@ export function SkillsRadar({ skills, size = 260 }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="max-w-full h-auto">
         {/* Rings */}
         {rings.map((pts, ri) => (
           <polygon
@@ -105,7 +105,7 @@ export function SkillsRadar({ skills, size = 260 }: Props) {
       {/* Legend */}
       <div className="w-full grid grid-cols-2 gap-1">
         {top.map(skill => (
-          <div key={skill.id} className="flex items-center justify-between gap-2 text-xs">
+          <div key={skill.id} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
             <span className="text-muted truncate">{skill.name}</span>
             <span className="text-primary font-mono font-semibold shrink-0">
               {skill.level.toFixed(2)}

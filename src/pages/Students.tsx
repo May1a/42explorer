@@ -182,10 +182,10 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || kickoff || levelMin > 0 || levelMax < 21 || onlineOnly);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-5">
+    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
           &gt; STUDENTS_BROWSER
         </h1>
         {total > 0 && (
@@ -196,21 +196,21 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
       </div>
 
       {/* Filter panel */}
-      <div className="rounded-2xl border p-5 space-y-4" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
+      <div className="rounded-2xl border p-4 md:p-5 space-y-4" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
         {/* Search */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <input
             type="text"
             value={search}
             onChange={e => handleSearch(e.target.value)}
             placeholder="◈  Search by login or display name..."
-            className="flex-1"
+            className="flex-1 min-w-[140px]"
             style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
           />
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="px-4 py-2 rounded-lg text-xs font-semibold border transition-all"
+              className="px-4 py-2 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap"
               style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
             >
               Clear filters
@@ -219,29 +219,29 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         </div>
 
         {/* Dropdowns */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Campus</label>
+            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Campus</label>
             <select value={campusId} onChange={e => handleCampus(e.target.value)} className="w-full text-xs">
               <option value="">All campuses</option>
               {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Cursus</label>
+            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Cursus</label>
             <select value={cursusId} onChange={e => handleCursus(e.target.value)} className="w-full text-xs">
               <option value="">All cursus</option>
               {cursuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Sort by</label>
+            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Sort by</label>
             <select value={sort} onChange={e => handleSort(e.target.value)} className="w-full text-xs">
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Kickoff</label>
+            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Kickoff</label>
             <select
               value={kickoff}
               onChange={e => handleKickoff(e.target.value)}
@@ -254,7 +254,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
+            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
             <button
               onClick={() => handleOnline(!onlineOnly)}
               className="w-full py-2 px-3 rounded-lg border text-xs font-semibold text-left transition-all"
@@ -270,19 +270,19 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         {/* Level range */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>Level range</label>
+            <label className="text-xs md:text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>Level range</label>
             <span className="text-xs font-mono" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
               {levelMin} – {levelMax}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Min</div>
+              <div className="text-xs md:text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Min</div>
               <input type="range" min={0} max={21} step={0.5} value={levelMin}
                 onChange={e => handleLevelMin(Math.min(Number(e.target.value), levelMax))} />
             </div>
             <div>
-              <div className="text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Max</div>
+              <div className="text-xs md:text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Max</div>
               <input type="range" min={0} max={21} step={0.5} value={levelMax}
                 onChange={e => handleLevelMax(Math.max(Number(e.target.value), levelMin))} />
             </div>

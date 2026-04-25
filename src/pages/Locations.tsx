@@ -176,10 +176,10 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   const selectedCampus = campuses.find(c => c.id === campusId);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-5">
+    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
           &gt; PEERFINDER++_
         </h1>
 
@@ -255,11 +255,10 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
           {/* Online count badge */}
           {locations && campusId && (
             <div
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 self-end"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 w-full md:w-auto"
               style={{
                 background: "color-mix(in srgb, var(--color-green) 8%, transparent)",
                 borderLeftColor: "var(--color-green)",
-                minWidth: 200,
               }}
             >
               <span className="online-pulse" />

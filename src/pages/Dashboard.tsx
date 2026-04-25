@@ -8,11 +8,11 @@ interface StatTileProps { label: string; value: string | number; sub?: string; c
 function StatTile({ label, value, sub, color }: StatTileProps) {
   return (
     <div
-      className="flex flex-col gap-1 p-4 rounded-xl border"
+      className="flex flex-col gap-1 p-3 md:p-4 rounded-xl border"
       style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}
     >
       <div
-        className="text-2xl font-black"
+        className="text-xl md:text-2xl font-black"
         style={{ color: color ?? "var(--color-primary)", fontFamily: "var(--font-mono)" }}
       >
         {value}
@@ -83,10 +83,10 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   const totalProjects = user.projects_users?.filter(p => p.status === "finished" || p.status === "in_progress").length ?? 0;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
           &gt; DASHBOARD_
         </h1>
         <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
@@ -96,7 +96,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
 
       {/* Profile card */}
       <div
-        className="rounded-2xl border p-6 relative overflow-hidden"
+        className="rounded-2xl border p-4 md:p-6 relative overflow-hidden"
         style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
       >
         {/* Coalition gradient overlay */}
@@ -180,7 +180,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Campus online */}
         <div
-          className="rounded-xl border p-5"
+          className="rounded-xl border p-4 md:p-5"
           style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -248,7 +248,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
 
         {/* Upcoming events */}
         <div
-          className="rounded-xl border p-5"
+          className="rounded-xl border p-4 md:p-5"
           style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
         >
           <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: "var(--color-muted)" }}>

@@ -33,13 +33,13 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
 
   return (
     <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--color-border)" }}>
-      <table className="w-full">
+      <table className="w-full text-xs md:text-sm">
         <thead style={{ background: "var(--color-surface)" }}>
           <tr>
-            <th>Project</th>
-            <th>Status</th>
-            <th>Grade</th>
-            <th>Date</th>
+            <th className="text-left p-2 md:p-3 font-semibold">Project</th>
+            <th className="text-left p-2 md:p-3 font-semibold">Status</th>
+            <th className="text-left p-2 md:p-3 font-semibold">Grade</th>
+            <th className="text-left p-2 md:p-3 font-semibold">Date</th>
           </tr>
         </thead>
         <tbody>
@@ -48,7 +48,7 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
             const status    = STATUS_STYLE[p.status] ?? { label: p.status, color: "var(--color-muted)" };
             return (
               <tr key={p.id} style={{ background: "var(--color-card)" }}>
-                <td>
+                <td className="p-2 md:p-3">
                   <div className="font-semibold text-xs text-[#e2e8f0]" style={{ fontFamily: "var(--font-mono)" }}>
                     {p.project.name}
                   </div>
@@ -58,17 +58,17 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
                     </span>
                   )}
                 </td>
-                <td>
+                <td className="p-2 md:p-3">
                   <span className="text-xs font-semibold" style={{ color: status.color }}>
                     {validated === true && "✓ "}
                     {validated === false && "✗ "}
                     {status.label}
                   </span>
                 </td>
-                <td>
-                  {p.final_mark !== null ? (
+<td className="p-2 md:p-3">
+                   {p.final_mark !== null ? (
                     <span
-                      className="text-sm font-bold"
+                      className="text-xs md:text-sm font-bold"
                       style={{
                         fontFamily: "var(--font-mono)",
                         color:
@@ -85,8 +85,8 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
                     <span style={{ color: "var(--color-faint)" }}>—</span>
                   )}
                 </td>
-                <td>
-                  <span className="text-xs" style={{ color: "var(--color-faint)" }}>
+<td className="p-2 md:p-3">
+                   <span className="text-xs" style={{ color: "var(--color-faint)" }}>
                     {p.marked_at ? new Date(p.marked_at).toLocaleDateString() : "—"}
                   </span>
                 </td>
@@ -233,7 +233,7 @@ export function ProfilePage({
     <div className="max-w-5xl mx-auto">
       {/* ── Header ── */}
       <div
-        className="relative p-6"
+        className="relative p-4 md:p-6"
         style={{
           background: coalition
             ? `linear-gradient(180deg, ${coalition.color}18 0%, var(--color-bg) 100%)`
@@ -250,7 +250,7 @@ export function ProfilePage({
             <img
               src={user.image?.versions?.large}
               alt={user.login}
-              className="w-24 h-24 rounded-2xl object-cover"
+              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover"
               style={{ border: `3px solid ${coalition?.color ?? "var(--color-border-hi)"}` }}
             />
             {user.location && (
@@ -262,7 +262,7 @@ export function ProfilePage({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h1 className="text-2xl font-black text-[#e2e8f0]">{user.displayname}</h1>
+                <h1 className="text-xl md:text-2xl font-black text-[#e2e8f0]">{user.displayname}</h1>
                 <div
                   className="font-semibold text-sm mt-0.5"
                   style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
@@ -319,36 +319,36 @@ export function ProfilePage({
       </div>
 
       {/* ── Stats row ── */}
-      <div className="px-6 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="px-4 md:px-6 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
         {mainCursus && (
           <BigLevel level={mainCursus.level} />
         )}
-        <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl border"
+        <div className="flex flex-col items-center gap-1 px-3 py-2.5 md:px-4 md:py-3 rounded-xl border"
           style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}>
-          <div className="text-2xl font-black" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
+          <div className="text-xl md:text-2xl font-black" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
             {user.correction_point}
           </div>
-          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Correction pts</div>
+          <div className="text-[10px] md:text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Correction pts</div>
         </div>
-        <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl border"
+        <div className="flex flex-col items-center gap-1 px-3 py-2.5 md:px-4 md:py-3 rounded-xl border"
           style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}>
-          <div className="text-2xl font-black" style={{ color: "var(--color-yellow)", fontFamily: "var(--font-mono)" }}>
+          <div className="text-xl md:text-2xl font-black" style={{ color: "var(--color-yellow)", fontFamily: "var(--font-mono)" }}>
             {user.wallet.toLocaleString()}
           </div>
-          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Wallet</div>
+          <div className="text-[10px] md:text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Wallet</div>
         </div>
-        <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl border"
+        <div className="flex flex-col items-center gap-1 px-3 py-2.5 md:px-4 md:py-3 rounded-xl border"
           style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}>
-          <div className="text-2xl font-black" style={{ color: "var(--color-purple)", fontFamily: "var(--font-mono)" }}>
+          <div className="text-xl md:text-2xl font-black" style={{ color: "var(--color-purple)", fontFamily: "var(--font-mono)" }}>
             {user.achievements?.length ?? 0}
           </div>
-          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Achievements</div>
+          <div className="text-[10px] md:text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--color-faint)" }}>Achievements</div>
         </div>
       </div>
 
       {/* ── Tabs ── */}
-      <div className="px-6">
-        <div className="flex gap-1 border-b" style={{ borderColor: "var(--color-border)" }}>
+      <div className="px-4 md:px-6 overflow-x-auto">
+        <div className="flex gap-1 border-b min-w-max" style={{ borderColor: "var(--color-border)" }}>
           {TABS.map(t => (
             <button
               key={t.id}
@@ -381,8 +381,7 @@ export function ProfilePage({
       </div>
 
       {/* ── Tab content ── */}
-      <div className="p-6">
-        {tab === "projects" && (
+      <div className="p-4 md:p-6">
           <ProjectsTab projects={user.projects_users ?? []} />
         )}
         {tab === "skills" && (
