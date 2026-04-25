@@ -127,14 +127,14 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
   );
 }
 
-function AchievementsTab({ achievements }: { achievements: Achievement[] }) {
+function AchievementsGrid({ achievements, limit }: { achievements: Achievement[]; limit?: number }) {
   const sorted = [...achievements].sort((a, b) => {
     const order: Record<string, number> = { challenge: 0, hard: 1, medium: 2, easy: 3, bonus: 4 };
     return (order[a.tier] ?? 5) - (order[b.tier] ?? 5);
-  });
+  }).slice(0, limit ?? achievements.length);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-fade-in">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-2 gap-3 animate-fade-in">
       {sorted.map((ach, i) => (
         <div
           key={ach.id}
@@ -149,10 +149,7 @@ function AchievementsTab({ achievements }: { achievements: Achievement[] }) {
           {ach.image ? (
             <img src={ach.image} alt={ach.name} className="w-12 h-12 object-contain" />
           ) : (
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-              style={{ background: "var(--color-card-hi)" }}
-            >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: "var(--color-card-hi)" }}>
               ◈
             </div>
           )}
@@ -221,6 +218,82 @@ function SkillsTab({ cursusUsers }: { cursusUsers: FortyTwoUser["cursus_users"] 
   );
 }
 
+function StatsCards({ user, mainCursus }: { user: FortyTwoUser; mainCursus?: any }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {mainCursus && (
+        <div className="animate-fade-in-up stagger-1">
+          <BigLevel level={mainCursus.level} />
+        </div>
+      )}
+      {[
+        { value: user.correction_point, label: "Correction pts", color: "var(--color-primary)", glow: "glow-primary" },
+        { value: user.wallet.toLocaleString(), label: "Wallet", color: "var(--color-yellow)", glow: "glow-yellow" },
+        { value: user.achievements?.length ?? 0, label: "Achievements", color: "var(--color-purple)", glow: "glow-purple" },
+      ].map((stat, i) => (
+        <div
+          key={stat.label}
+          className={`flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5 ${stat.glow} animate-fade-in-up`}
+          style={{
+            background: "linear-gradient(180deg, var(--color-card-hi), var(--color-card))",
+            borderColor: "var(--color-border)",
+            animationDelay: `${(i + 2) * 0.08}s`,
+          }}
+        >
+          <div className="text-2xl md:text-3xl font-black leading-none" style={{ color: stat.color, fontFamily: "var(--font-mono)" }}>
+            {stat.value}
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: "var(--color-faint)" }}>
+            {stat.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Sidebar({ user, mainCursus }: { user: FortyTwoUser; mainCursus?: any }) {
+  const topCursus = mainCursus ? [mainCursus] : (user.cursus_users ?? []);
+
+  return (
+    <div className="space-y-5 animate-fade-in-up stagger-2">
+      {/* Stats */}
+      <StatsCards user={user} mainCursus={mainCursus} />
+
+      {/* Skills Radar */}
+      {topCursus.length > 0 && (
+        <div
+          className="rounded-2xl border p-5"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: "var(--color-muted)" }}>
+            Skills
+          </div>
+          <SkillsRadar skills={topCursus[0]?.skills ?? []} size={240} />
+        </div>
+      )}
+
+      {/* Top Achievements */}
+      {(user.achievements?.length ?? 0) > 0 && (
+        <div
+          className="rounded-2xl border p-5"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-muted)" }}>
+              Top Achievements
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold" style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}>
+              {user.achievements?.length}
+            </span>
+          </div>
+          <AchievementsGrid achievements={user.achievements ?? []} limit={6} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProfilePage({
   login: loginProp,
   onNavigate,
@@ -278,7 +351,7 @@ export function ProfilePage({
   ];
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="min-h-full">
       {/* ── Ambient header glow ── */}
       {coalition && (
         <div
@@ -316,10 +389,7 @@ export function ProfilePage({
               />
             </div>
             {user.location && (
-              <span
-                className="online-pulse absolute -bottom-1 -right-1 border-[2.5px]"
-                style={{ borderColor: "var(--color-bg)" }}
-              />
+              <span className="online-pulse absolute -bottom-1 -right-1 border-[2.5px]" style={{ borderColor: "var(--color-bg)" }} />
             )}
           </div>
 
@@ -330,10 +400,7 @@ export function ProfilePage({
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: "#e2e8f0", fontFamily: "var(--font-sans)" }}>
                   {user.displayname}
                 </h1>
-                <div
-                  className="font-semibold text-sm mt-0.5"
-                  style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
-                >
+                <div className="font-semibold text-sm mt-0.5" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
                   @{user.login}
                 </div>
                 {title && (
@@ -381,34 +448,22 @@ export function ProfilePage({
 
             <div className="mt-3 flex items-center gap-2 flex-wrap animate-fade-in-up stagger-3">
               {primaryCampus && (
-                <span
-                  className="text-[11px] px-2 py-1 rounded-md"
-                  style={{ background: "var(--color-card)", color: "var(--color-muted)" }}
-                >
+                <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: "var(--color-card)", color: "var(--color-muted)" }}>
                   {primaryCampus.name}
                 </span>
               )}
               {mainCursus && (
-                <span
-                  className="text-[11px] px-2 py-1 rounded-md"
-                  style={{ background: "var(--color-card)", color: "var(--color-muted)" }}
-                >
+                <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: "var(--color-card)", color: "var(--color-muted)" }}>
                   {mainCursus.grade ?? mainCursus.cursus?.name}
                 </span>
               )}
               {user["staff?"] && (
-                <span
-                  className="text-[10px] font-bold px-2 py-1 rounded-md"
-                  style={{ background: "color-mix(in srgb, var(--color-yellow) 12%, transparent)", color: "var(--color-yellow)" }}
-                >
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md" style={{ background: "color-mix(in srgb, var(--color-yellow) 12%, transparent)", color: "var(--color-yellow)" }}>
                   STAFF
                 </span>
               )}
               {user.alumni && (
-                <span
-                  className="text-[10px] font-bold px-2 py-1 rounded-md"
-                  style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}
-                >
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md" style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}>
                   ALUMNI
                 </span>
               )}
@@ -417,105 +472,77 @@ export function ProfilePage({
         </div>
       </div>
 
-      {/* ── Stats row ── */}
-      <div className="px-5 md:px-8 pb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {mainCursus && (
-          <div className="animate-fade-in-up stagger-1">
-            <BigLevel level={mainCursus.level} />
+      {/* ── Two-column layout ── */}
+      <div className="px-5 md:px-8 pb-8 grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 xl:gap-8">
+        {/* LEFT: Main content */}
+        <div className="space-y-5 min-w-0">
+          {/* Mobile-only stats row */}
+          <div className="xl:hidden">
+            <StatsCards user={user} mainCursus={mainCursus} />
           </div>
-        )}
 
-        {[
-          { value: user.correction_point, label: "Correction pts", color: "var(--color-primary)", glow: "glow-primary" },
-          { value: user.wallet.toLocaleString(), label: "Wallet", color: "var(--color-yellow)", glow: "glow-yellow" },
-          { value: user.achievements?.length ?? 0, label: "Achievements", color: "var(--color-purple)", glow: "glow-purple" },
-        ].map((stat, i) => (
-          <div
-            key={stat.label}
-            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5 ${stat.glow} animate-fade-in-up`}
-            style={{
-              background: "linear-gradient(180deg, var(--color-card-hi), var(--color-card))",
-              borderColor: "var(--color-border)",
-              animationDelay: `${(i + 2) * 0.08}s`,
-            }}
-          >
-            <div
-              className="text-2xl md:text-3xl font-black leading-none"
-              style={{ color: stat.color, fontFamily: "var(--font-mono)" }}
-            >
-              {stat.value}
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: "var(--color-faint)" }}>
-              {stat.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Tabs ── */}
-      <div className="px-5 md:px-8 overflow-x-auto animate-fade-in-up stagger-3">
-        <div className="flex gap-1 min-w-max">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className="relative px-4 py-2.5 text-[13px] font-semibold transition-all rounded-lg"
-              style={
-                tab === t.id
-                  ? {
-                      background: "var(--color-card-hi)",
-                      color: "#e2e8f0",
-                    }
-                  : { color: "var(--color-faint)" }
-              }
-              onMouseEnter={e => {
-                if (tab !== t.id) {
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-muted)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (tab !== t.id) {
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-faint)";
-                }
-              }}
-            >
-              {tab === t.id && (
-                <div
-                  className="absolute inset-x-2 bottom-1 h-[2px] rounded-full"
-                  style={{ background: "var(--color-primary)" }}
-                />
-              )}
-              <span className="relative z-10">{t.label}</span>
-              {t.count !== undefined && (
-                <span
-                  className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-bold"
-                  style={{
-                    background: tab === t.id ? "var(--color-card)" : "var(--color-card-hi)",
-                    color: "var(--color-faint)",
+          {/* Tabs */}
+          <div className="overflow-x-auto animate-fade-in-up stagger-3">
+            <div className="flex gap-1 min-w-max">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className="relative px-4 py-2.5 text-[13px] font-semibold transition-all rounded-lg"
+                  style={
+                    tab === t.id
+                      ? { background: "var(--color-card-hi)", color: "#e2e8f0" }
+                      : { color: "var(--color-faint)" }
+                  }
+                  onMouseEnter={e => {
+                    if (tab !== t.id) (e.currentTarget as HTMLElement).style.color = "var(--color-muted)";
+                  }}
+                  onMouseLeave={e => {
+                    if (tab !== t.id) (e.currentTarget as HTMLElement).style.color = "var(--color-faint)";
                   }}
                 >
-                  {t.count}
-                </span>
-              )}
-            </button>
-          ))}
+                  {tab === t.id && (
+                    <div className="absolute inset-x-2 bottom-1 h-[2px] rounded-full" style={{ background: "var(--color-primary)" }} />
+                  )}
+                  <span className="relative z-10">{t.label}</span>
+                  {t.count !== undefined && (
+                    <span
+                      className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-bold"
+                      style={{
+                        background: tab === t.id ? "var(--color-card)" : "var(--color-card-hi)",
+                        color: "var(--color-faint)",
+                      }}
+                    >
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-px" style={{ background: "var(--color-border)" }} />
+
+          {/* Tab content */}
+          <div>
+            {tab === "projects" && (
+              <ProjectsTab projects={user.projects_users ?? []} />
+            )}
+            {tab === "skills" && (
+              <SkillsTab cursusUsers={user.cursus_users ?? []} />
+            )}
+            {tab === "achievements" && (
+              <AchievementsGrid achievements={user.achievements ?? []} />
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Divider */}
-      <div className="mx-5 md:mx-8 h-px mt-1 mb-5" style={{ background: "var(--color-border)" }} />
-
-      {/* ── Tab content ── */}
-      <div className="px-5 md:px-8 pb-8">
-        {tab === "projects" && (
-          <ProjectsTab projects={user.projects_users ?? []} />
-        )}
-        {tab === "skills" && (
-          <SkillsTab cursusUsers={user.cursus_users ?? []} />
-        )}
-        {tab === "achievements" && (
-          <AchievementsTab achievements={user.achievements ?? []} />
-        )}
+        {/* RIGHT: Sidebar (xl+ only) */}
+        <div className="hidden xl:block">
+          <div className="sticky top-6">
+            <Sidebar user={user} mainCursus={mainCursus} />
+          </div>
+        </div>
       </div>
     </div>
   );
