@@ -174,6 +174,8 @@ export interface FortyTwoUser {
   login: string;
   url: string;
   email: string;
+  first_name: string;
+  last_name: string;
   displayname: string;
   kind: string;
   image: { link: string; versions: ImageVersions };
