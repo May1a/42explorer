@@ -17,7 +17,7 @@ function parseHash(): { page: Page; param?: string } {
 }
 
 export function App() {
-  const { config, loading } = useAuth();
+  const { config, loading, authError, logout } = useAuth();
   const [page,  setPage]  = useState<Page>(() => parseHash().page);
   const [param, setParam] = useState<string | undefined>(() => parseHash().param ?? undefined);
 
@@ -43,6 +43,25 @@ export function App() {
 
   // Show setup screen if no client ID configured yet
   if (!config?.clientId) return <SetupPage />;
+
+  // Show auth error prominently so it's obvious what failed
+  if (authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--color-bg)" }}>
+        <div className="w-full max-w-md rounded-2xl border p-8 space-y-4" style={{ background: "var(--color-card)", borderColor: "var(--color-red)" }}>
+          <div className="text-lg font-bold" style={{ color: "var(--color-red)" }}>Auth error</div>
+          <p className="text-sm font-mono break-all" style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}>{authError}</p>
+          <button
+            onClick={logout}
+            className="w-full py-2 rounded-xl text-sm font-bold"
+            style={{ background: "var(--color-purple)", color: "#fff" }}
+          >
+            Reset &amp; try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Layout page={page} onNavigate={navigate}>
