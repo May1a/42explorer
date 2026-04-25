@@ -46,7 +46,7 @@ export function Layout({ page, onNavigate, children }: Props) {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden w-full">
       {/* Hamburger button — fixed position, mobile only */}
       <button
         onClick={() => setSidebarOpen(true)}
