@@ -27,18 +27,19 @@ async function slotMutate(
   method: "POST" | "DELETE",
   path: string,
   token: string,
-  body?: unknown
+  body?: BodyInit,
+  contentType?: string
 ): Promise<Slot | void> {
   const url = new URL("/api/42", window.location.origin);
   url.searchParams.set("path", path);
 
+  const headers = new Headers({ Authorization: `Bearer ${token}` });
+  if (contentType) headers.set("Content-Type", contentType);
+
   const res = await fetch(url.toString(), {
     method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    headers,
+    body,
   });
 
   if (!res.ok) {
@@ -50,11 +51,21 @@ async function slotMutate(
 }
 
 export function useCreateSlot() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const qc = useQueryClient();
 
   return useMutation<Slot, API42Error, { begin_at: string; end_at: string }>({
-    mutationFn: (slot) => slotMutate("POST", "/slots", token!, { slot }),
+    mutationFn: (slot) => {
+      if (!user?.id) {
+        throw new API42Error(401, "Cannot create a slot before your 42 profile is loaded.");
+      }
+      const params = new URLSearchParams({
+        "slot[user_id]": String(user.id),
+        "slot[begin_at]": slot.begin_at,
+        "slot[end_at]": slot.end_at,
+      });
+      return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded");
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }),
   });
 }
