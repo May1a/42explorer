@@ -1,10 +1,14 @@
 /**
- * Handles 42 OAuth implicit flow entirely in the browser.
+ * Handles 42 OAuth Authorization Code flow.
  *
- * Setup (one-time):  user provides their app's CLIENT_ID + REDIRECT_URI,
- * stored in localStorage.  Then we redirect to 42's authorize endpoint
- * with response_type=token.  On return the access_token arrives in the
- * URL fragment.
+ * The 42 API does not support the implicit flow (response_type=token).
+ * Instead:
+ *   browser → 42 authorize (response_type=code) → /api/auth/callback
+ *   → edge function exchanges code+secret → redirects back with
+ *   #access_token=... in the URL fragment → we read it here.
+ *
+ * The CLIENT_SECRET lives only in Vercel env vars (api/auth/callback.ts).
+ * The CLIENT_ID is entered once in the setup screen and stored in localStorage.
  */
 import {
   createContext,
@@ -16,14 +20,18 @@ import {
 } from "react";
 import type { FortyTwoUser } from "../types";
 
-const STORAGE_KEY_TOKEN   = "ft_access_token";
-const STORAGE_KEY_EXPIRY  = "ft_token_expiry";
-const STORAGE_KEY_CLIENT  = "ft_client_id";
-const STORAGE_KEY_REDIR   = "ft_redirect_uri";
+const STORAGE_KEY_TOKEN  = "ft_access_token";
+const STORAGE_KEY_EXPIRY = "ft_token_expiry";
+const STORAGE_KEY_CLIENT = "ft_client_id";
+
+// The redirect URI is always <origin>/api/auth/callback — derived at runtime,
+// never stored.  Register exactly this URL in your 42 OAuth app settings.
+function callbackUri() {
+  return window.location.origin + "/api/auth/callback";
+}
 
 export interface AuthConfig {
   clientId: string;
-  redirectUri: string;
 }
 
 export interface AuthContextValue {
@@ -46,9 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load persisted config & token on mount
   useEffect(() => {
-    const clientId    = localStorage.getItem(STORAGE_KEY_CLIENT)  ?? "";
-    const redirectUri = localStorage.getItem(STORAGE_KEY_REDIR)   ?? "";
-    if (clientId) setConfig({ clientId, redirectUri });
+    const clientId = localStorage.getItem(STORAGE_KEY_CLIENT) ?? "";
+    if (clientId) setConfig({ clientId });
 
     // Check for token in URL fragment (post-OAuth redirect)
     const hash   = new URLSearchParams(window.location.hash.slice(1));
@@ -95,7 +102,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const saveConfig = useCallback((cfg: AuthConfig) => {
     localStorage.setItem(STORAGE_KEY_CLIENT, cfg.clientId);
-    localStorage.setItem(STORAGE_KEY_REDIR,  cfg.redirectUri);
     setConfig(cfg);
   }, []);
 
@@ -103,8 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!config?.clientId) return;
     const params = new URLSearchParams({
       client_id:     config.clientId,
-      redirect_uri:  config.redirectUri || window.location.origin + "/",
-      response_type: "token",
+      redirect_uri:  callbackUri(),
+      response_type: "code",
       scope:         "public",
     });
     window.location.href = `https://api.intra.42.fr/oauth/authorize?${params}`;
