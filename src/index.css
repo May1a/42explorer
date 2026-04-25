@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg:        #0a0a10;
+  --color-surface:   #0d0d18;
+  --color-card:      #14141f;
+  --color-card-hi:   #1a1a30;
+  --color-border:    #1e1e30;
+  --color-border-hi: #2a2a3e;
+  --color-primary:   #00c9d4;
+  --color-primary-d: #009fa8;
+  --color-purple:    #7c3aed;
+  --color-green:     #22c55e;
+  --color-yellow:    #f59e0b;
+  --color-red:       #ef4444;
+  --color-muted:     #9ca3af;
+  --color-faint:     #6b7280;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+}
+
+@layer base {
+  html, body, #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-bg text-[#e2e8f0] antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  #root {
+    @apply flex overflow-hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar       { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border-hi rounded-full; }
+
+  /* Inputs / selects */
+  input:not([type=range]),
+  select,
+  textarea {
+    @apply bg-card border border-border rounded-lg px-3 py-2 text-[#e2e8f0] text-sm outline-none
+           transition-colors focus:border-primary;
+  }
+  input:not([type=range]):focus,
+  select:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+  select option { @apply bg-card; }
+
+  /* Range slider */
+  input[type=range] {
+    @apply w-full cursor-pointer appearance-none bg-transparent border-0 outline-none p-0;
+    box-shadow: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    @apply h-1 rounded-full bg-border-hi;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    @apply w-4 h-4 rounded-full bg-primary border-2 border-bg;
+    margin-top: -6px;
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+
+  /* Table */
+  th { @apply text-muted font-semibold text-xs tracking-wider uppercase py-3 px-4 border-b border-border text-left; }
+  td { @apply py-3 px-4 border-b border-border text-sm; }
+  tr:last-child td { @apply border-0; }
+  tbody tr:hover { @apply bg-card-hi; }
+}
+
+/* Online pulse animation */
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 60%, transparent); }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.online-pulse {
+  animation: pulse-green 2s infinite;
+  @apply w-2 h-2 rounded-full bg-green;
+}
+
+/* Shimmer skeleton */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.skeleton {
+  @apply rounded-md;
+  background: linear-gradient(90deg, var(--color-card) 25%, var(--color-card-hi) 50%, var(--color-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Radar chart */
+.radar-polygon { fill: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+.radar-polygon-stroke { stroke: var(--color-primary); }
