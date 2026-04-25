@@ -51,7 +51,7 @@ export async function fetch42<T>(
 export function use42Query<T>(
   path: string | null,
   params?: Params,
-): UseQueryResult<API42Result<T>, Error> {
+): UseQueryResult<API42Result<T>, API42Error | Error> {
   const { token } = useAuth();
 
   return useQuery({

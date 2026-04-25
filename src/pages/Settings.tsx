@@ -1,8 +1,19 @@
 import { useAuth } from "../context/AuthContext";
 import { openOfficial } from "../lib/redirects";
 
+const KNOWN_SCOPES: { scope: string; label: string; description: string }[] = [
+  { scope: "public",    label: "Public",    description: "Read your profile, campus, projects, evaluations, events, and slots." },
+  { scope: "projects",  label: "Projects",   description: "Elevated access to project data. Needed for write operations and certain project API endpoints." },
+  { scope: "forum",     label: "Forum",      description: "Access to 42 forum data." },
+  { scope: "tig",       label: "TIG",        description: "Tutoring-related features." },
+  { scope: "elearning", label: "E-learning", description: "Access to e-learning platform data." },
+  { scope: "profil",    label: "Profile",     description: "Edit your 42 profile via API." },
+];
+
 export function SettingsPage() {
-  const { user, config, token, currentScope, logout } = useAuth();
+  const { user, config, token, currentScope, login, logout } = useAuth();
+
+  const activeScopes = currentScope.split(" ").filter(Boolean);
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4 md:space-y-6">
@@ -68,6 +79,65 @@ export function SettingsPage() {
           </button>
         )}
       </div>
+
+      {/* Scope Management */}
+      {user && (
+        <div
+          className="rounded-xl border p-4 md:p-5"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--color-muted)" }}>
+            API Scopes
+          </h3>
+          <p className="text-xs mb-3" style={{ color: "var(--color-faint)" }}>
+            Each scope grants access to different API endpoints. Granting additional scopes requires re-authentication.
+          </p>
+          <div className="space-y-2">
+            {KNOWN_SCOPES.map(({ scope, label, description }) => {
+              const active = activeScopes.includes(scope);
+              return (
+                <div
+                  key={scope}
+                  className="flex items-start justify-between gap-3 p-2 rounded-lg"
+                  style={{ background: "var(--color-card-hi)" }}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold" style={{ color: active ? "var(--color-green)" : "var(--color-faint)" }}>
+                        {label}
+                      </span>
+                      {active && (
+                        <span
+                          className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                          style={{ color: "var(--color-green)", background: "color-mix(in srgb, var(--color-green) 12%, transparent)" }}
+                        >
+                          active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--color-muted)" }}>
+                      {description}
+                    </p>
+                  </div>
+                  {!active && (
+                    <button
+                      onClick={() => login(
+                        scope === "public"
+                          ? undefined
+                          : [scope]
+                      )}
+                      className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider transition-all"
+                      style={{ background: "var(--color-primary)", color: "#000" }}
+                    >
+                      + Enable
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Official 42 actions */}
       <div

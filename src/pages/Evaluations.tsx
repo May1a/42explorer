@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { useMyScaleTeams } from "../api/scale-teams";
 import type { ScaleTeam } from "../types";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
 type Tab = "as_corrector" | "as_corrected";
 
 export function EvaluationsPage() {
   const [tab, setTab] = useState<Tab>("as_corrected");
 
-  const { data: corrByData, isLoading: corrByLoad } = useMyScaleTeams("as_corrected");
-  const { data: corrForData, isLoading: corrForLoad } = useMyScaleTeams("as_corrector");
+  const { data: corrByData, isLoading: corrByLoad, error: corrByErr } = useMyScaleTeams("as_corrected");
+  const { data: corrForData, isLoading: corrForLoad, error: corrForErr } = useMyScaleTeams("as_corrector");
 
   const items = tab === "as_corrected" ? corrByData?.data : corrForData?.data;
   const loading = tab === "as_corrected" ? corrByLoad : corrForLoad;
+  const error = tab === "as_corrected" ? corrByErr : corrForErr;
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
@@ -46,7 +48,9 @@ export function EvaluationsPage() {
         </div>
       )}
 
-      {!loading && !items?.length && (
+      {error && <InsufficientScopeCard error={error} />}
+
+      {!loading && !error && !items?.length && (
         <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
           No evaluations found
         </p>

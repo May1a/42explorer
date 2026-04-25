@@ -47,11 +47,13 @@ export default async function handler(request: Request): Promise<Response> {
     return Response.redirect(`${origin}/#error=token_failed`, 302);
   }
 
-  const data: { access_token: string; expires_in: number } = await tokenRes.json() as any;
+  const data: { access_token: string; expires_in: number; scope?: string } = await tokenRes.json() as any;
 
-  // Hand the token back to the SPA via the URL fragment (never in query string)
-  return Response.redirect(
-    `${origin}/#access_token=${data.access_token}&expires_in=${data.expires_in}`,
-    302
-  );
+  // Build fragment with token, expiry, and scope so AuthContext can pick it up
+  const params = new URLSearchParams();
+  params.set("access_token", data.access_token);
+  params.set("expires_in",    String(data.expires_in));
+  if (data.scope) params.set("scope", data.scope);
+
+  return Response.redirect(`${origin}/#${params.toString()}`, 302);
 }

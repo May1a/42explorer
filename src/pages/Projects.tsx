@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { useProjectUsers } from "../api/projects";
 import type { ProjectUser } from "../types";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   finished:             { label: "Finished",             color: "var(--color-green)" },
@@ -46,15 +47,7 @@ export function ProjectsPage() {
         </div>
       )}
 
-      {error && (
-        <div
-          className="rounded-xl border p-4"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-red)" }}
-        >
-          <div className="text-sm font-bold" style={{ color: "var(--color-red)" }}>Error</div>
-          <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>{(error as Error).message}</div>
-        </div>
-      )}
+      {error && <InsufficientScopeCard error={error} />}
 
       {!isLoading && !error && projects.length === 0 && (
         <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { StudentCard } from "../components/StudentCard";
 import { Pagination } from "../components/Pagination";
 import { SkeletonCard } from "../components/Loading";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { FortyTwoUser, Campus, Cursus, CursusUser } from "../types";
 
 const PAGE_SIZE = 20;
@@ -354,13 +355,7 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border-l-4"
-          style={{ background: "color-mix(in srgb, var(--color-red) 8%, transparent)", borderLeftColor: "var(--color-red)" }}>
-          <span style={{ color: "var(--color-red)" }}>✕</span>
-          <span className="text-sm" style={{ color: "var(--color-muted)" }}>{error.message}</span>
-        </div>
-      )}
+      {error && <InsufficientScopeCard error={error} />}
 
       {/* Results */}
       {isLoading ? (

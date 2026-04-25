@@ -204,6 +204,14 @@ export interface FortyTwoUser {
   coalitions_users: CoalitionUser[];
 }
 
+export interface Slot {
+  id: number;
+  begin_at: string;
+  end_at: string;
+  user: Partial<FortyTwoUser>;
+  scale_team: ScaleTeam | null;
+}
+
 export interface Location {
   id: number;
   begin_at: string;

@@ -1,5 +1,6 @@
 import { useEvents } from "../api/events";
 import type { Event } from "../types";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
 export function EventsPage() {
   const { data, isLoading, error } = useEvents({ "page.size": 100, sort: "begin_at" });
@@ -26,15 +27,7 @@ export function EventsPage() {
         </div>
       )}
 
-      {error && (
-        <div
-          className="rounded-xl border p-4"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-red)" }}
-        >
-          <div className="text-sm font-bold" style={{ color: "var(--color-red)" }}>Error</div>
-          <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>{(error as Error).message}</div>
-        </div>
-      )}
+      {error && <InsufficientScopeCard error={error} />}
 
       {!isLoading && !error && !upcoming.length && !past.length && (
         <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>

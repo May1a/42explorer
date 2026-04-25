@@ -5,9 +5,12 @@ import { BigLevel } from "../components/LevelBar";
 import { CoalitionBadge } from "../components/CoalitionBadge";
 import { SkillsRadar } from "../components/SkillsRadar";
 import { FullPageSpinner } from "../components/Loading";
+import { useUserScaleTeams } from "../api/scale-teams";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { FortyTwoUser, ProjectUser, Achievement } from "../types";
 
-type Tab = "projects" | "skills" | "achievements";
+type Tab = "projects" | "timeline" | "skills" | "achievements" | "evaluations";
+type ProjectView = "table" | "timeline";
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   finished:             { label: "Finished",    color: "var(--color-green)",  bg: "color-mix(in srgb, var(--color-green) 12%, transparent)" },
@@ -123,6 +126,125 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ProjectTimeline({ projects }: { projects: ProjectUser[] }) {
+  const sorted = [...projects]
+    .filter(p => p.marked_at)
+    .sort((a, b) => new Date(a.marked_at!).getTime() - new Date(b.marked_at!).getTime());
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-center py-8 text-sm" style={{ color: "var(--color-faint)" }}>
+        No marked projects yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-fade-in">
+      <div className="relative pl-6 ml-2">
+        <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: "var(--color-border)" }} />
+        {sorted.map((p, i) => {
+          const validated = p["validated?"];
+          const status = STATUS_STYLE[p.status] ?? { label: p.status, color: "var(--color-muted)", bg: "var(--color-card-hi)" };
+          const date = new Date(p.marked_at!);
+          return (
+            <div key={p.id} className="relative pb-5 last:pb-0" style={{ animationDelay: `${i * 0.04}s` }}>
+              <div
+                className="absolute -left-[22px] top-1.5 w-[9px] h-[9px] rounded-full border-2"
+                style={{
+                  background: validated === true ? "var(--color-green)" : validated === false ? "var(--color-red)" : "var(--color-yellow)",
+                  borderColor: "var(--color-bg)",
+                }}
+              />
+              <div className="text-[10px] font-bold mb-1" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+                {date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </div>
+              <div
+                className="rounded-xl border p-3"
+                style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+              >
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-[#e2e8f0]">{p.project.name}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
+                        style={{ color: status.color, background: status.bg }}
+                      >
+                        {status.label}
+                      </span>
+                      <span className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+                        attempt #{p.occurrence}
+                      </span>
+                    </div>
+                  </div>
+                  {p.final_mark != null && (
+                    <div className="text-lg font-black shrink-0" style={{
+                      fontFamily: "var(--font-mono)",
+                      color: validated === true ? "var(--color-green)" : validated === false ? "var(--color-red)" : "var(--color-muted)",
+                    }}>
+                      {p.final_mark}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EvaluationsTab({ userId }: { userId: number }) {
+  const { data, isLoading, error } = useUserScaleTeams(userId, { "page.size": 50, sort: "-begin_at" });
+  const evaluations = data?.data ?? [];
+
+  if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-16 w-full rounded-xl" />)}</div>;
+  if (error) return <InsufficientScopeCard error={error} />;
+  if (!evaluations.length) return <div className="text-center py-8 text-sm" style={{ color: "var(--color-faint)" }}>No evaluations found</div>;
+
+  return (
+    <div className="space-y-2 animate-fade-in">
+      {evaluations.map(ev => (
+        <div
+          key={ev.id}
+          className="rounded-xl border p-3 md:p-4 flex items-center justify-between gap-3 flex-wrap"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
+                style={{
+                  color: ev.filled_at ? "var(--color-green)" : "var(--color-yellow)",
+                  background: `color-mix(in srgb, ${ev.filled_at ? "var(--color-green)" : "var(--color-yellow)"} 12%, transparent)`,
+                }}
+              >
+                {ev.filled_at ? "Filled" : "Pending"}
+              </span>
+              <span className="text-[10px] font-semibold" style={{ color: "var(--color-muted)" }}>
+                {ev.scale?.name ?? `Scale #${ev.scale_id}`}
+              </span>
+            </div>
+            <div className="text-xs mt-1" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+              {new Date(ev.begin_at).toLocaleDateString()}
+            </div>
+          </div>
+          {ev.final_mark != null && (
+            <div className="text-lg font-black shrink-0" style={{
+              fontFamily: "var(--font-mono)",
+              color: ev.final_mark >= 50 ? "var(--color-green)" : "var(--color-red)",
+            }}>
+              {ev.final_mark}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -304,6 +426,7 @@ export function ProfilePage({
   const { user: me } = useAuth();
   const targetLogin = loginProp || me?.login;
   const [tab, setTab] = useState<Tab>("projects");
+  const [projView, setProjView] = useState<ProjectView>("table");
 
   const { data: res, isLoading, error } = use42Query<FortyTwoUser>(
     targetLogin ? `/users/${targetLogin}` : null
@@ -348,6 +471,7 @@ export function ProfilePage({
     { id: "projects",     label: "Projects",     count: user.projects_users?.length },
     { id: "skills",       label: "Skills" },
     { id: "achievements", label: "Achievements", count: user.achievements?.length },
+    { id: "evaluations",  label: "Evaluations" },
   ];
 
   return (
@@ -526,13 +650,37 @@ export function ProfilePage({
           {/* Tab content */}
           <div>
             {tab === "projects" && (
-              <ProjectsTab projects={user.projects_users ?? []} />
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  {(["table", "timeline"] as ProjectView[]).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setProjView(v)}
+                      className="text-[10px] font-bold uppercase px-3 py-1 rounded-lg tracking-wider transition-all"
+                      style={{
+                        background: projView === v ? "var(--color-primary)" : "var(--color-card-hi)",
+                        color: projView === v ? "#000" : "var(--color-muted)",
+                      }}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                {projView === "table" ? (
+                  <ProjectsTab projects={user.projects_users ?? []} />
+                ) : (
+                  <ProjectTimeline projects={user.projects_users ?? []} />
+                )}
+              </div>
             )}
             {tab === "skills" && (
               <SkillsTab cursusUsers={user.cursus_users ?? []} />
             )}
             {tab === "achievements" && (
               <AchievementsGrid achievements={user.achievements ?? []} />
+            )}
+            {tab === "evaluations" && (
+              <EvaluationsTab userId={user.id} />
             )}
           </div>
         </div>
