@@ -23,6 +23,7 @@ import type { FortyTwoUser } from "../types";
 const STORAGE_KEY_TOKEN  = "ft_access_token";
 const STORAGE_KEY_EXPIRY = "ft_token_expiry";
 const STORAGE_KEY_CLIENT = "ft_client_id";
+const STORAGE_KEY_SCOPE  = "ft_scope";
 
 function callbackUri() {
   return window.location.origin + "/api/auth/callback";
@@ -36,19 +37,21 @@ export interface AuthContextValue {
   config: AuthConfig | null;
   loading: boolean;
   authError: string | null;
+  currentScope: string;
   saveConfig: (cfg: AuthConfig) => void;
-  login: () => void;
+  login: (extraScopes?: string[]) => void;
   logout: () => void;
 }
 
 const Ctx = createContext<AuthContextValue>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token,     setToken]     = useState<string | null>(null);
-  const [user,      setUser]      = useState<FortyTwoUser | null>(null);
-  const [config,    setConfig]    = useState<AuthConfig | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [token,        setToken]        = useState<string | null>(null);
+  const [user,         setUser]         = useState<FortyTwoUser | null>(null);
+  const [config,       setConfig]       = useState<AuthConfig | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [authError,    setAuthError]    = useState<string | null>(null);
+  const [currentScope, setCurrentScope] = useState("public");
 
   useEffect(() => {
     const clientId = localStorage.getItem(STORAGE_KEY_CLIENT) ?? "";
@@ -67,10 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for token returned by /api/auth/callback
     const tkn   = hash.get("access_token");
     const expIn = hash.get("expires_in");
+    const scope = hash.get("scope");
     if (tkn) {
       const expiry = Date.now() + Number(expIn ?? 7200) * 1000;
+      const resolvedScope = scope || "public";
       localStorage.setItem(STORAGE_KEY_TOKEN,  tkn);
       localStorage.setItem(STORAGE_KEY_EXPIRY, String(expiry));
+      localStorage.setItem(STORAGE_KEY_SCOPE,  resolvedScope);
+      setCurrentScope(resolvedScope);
       history.replaceState(null, "", window.location.pathname);
       fetchUserAndActivate(tkn);
       return;
@@ -79,11 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Resume from stored token
     const storedToken  = localStorage.getItem(STORAGE_KEY_TOKEN);
     const storedExpiry = Number(localStorage.getItem(STORAGE_KEY_EXPIRY) ?? 0);
+    const storedScope  = localStorage.getItem(STORAGE_KEY_SCOPE) ?? "public";
+    setCurrentScope(storedScope);
     if (storedToken && storedExpiry > Date.now() + 60_000) {
       fetchUserAndActivate(storedToken);
     } else {
       localStorage.removeItem(STORAGE_KEY_TOKEN);
       localStorage.removeItem(STORAGE_KEY_EXPIRY);
+      localStorage.removeItem(STORAGE_KEY_SCOPE);
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,13 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConfig(cfg);
   }, []);
 
-  const login = useCallback(() => {
+  const login = useCallback((extraScopes?: string[]) => {
     if (!config?.clientId) return;
+    const scopes = ["public", ...(extraScopes ?? [])];
     const params = new URLSearchParams({
       client_id:     config.clientId,
       redirect_uri:  callbackUri(),
       response_type: "code",
-      scope:         "public",
+      scope:         scopes.join(" "),
     });
     window.location.href = `https://api.intra.42.fr/oauth/authorize?${params}`;
   }, [config]);
@@ -131,13 +142,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     localStorage.removeItem(STORAGE_KEY_EXPIRY);
+    localStorage.removeItem(STORAGE_KEY_SCOPE);
     setToken(null);
     setUser(null);
     setAuthError(null);
+    setCurrentScope("public");
   }, []);
 
   return (
-    <Ctx.Provider value={{ token, user, config, loading, authError, saveConfig, login, logout }}>
+    <Ctx.Provider value={{ token, user, config, loading, authError, currentScope, saveConfig, login, logout }}>
       {children}
     </Ctx.Provider>
   );

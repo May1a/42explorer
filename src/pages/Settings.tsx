@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { openOfficial } from "../lib/redirects";
 
 export function SettingsPage() {
-  const { user, config, token, logout } = useAuth();
+  const { user, config, token, currentScope, logout } = useAuth();
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4 md:space-y-6">
@@ -44,7 +44,7 @@ export function SettingsPage() {
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "var(--color-faint)" }}>Scope</span>
-                <span style={{ color: "var(--color-primary)" }}>public</span>
+                <span style={{ color: "var(--color-primary)" }}>{currentScope}</span>
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "var(--color-faint)" }}>User ID</span>

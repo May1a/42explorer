@@ -1,5 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { API42Error } from "../lib/api-error";
 
 export type Params = Record<string, string | number | boolean | undefined>;
 
@@ -40,7 +41,7 @@ export async function fetch42<T>(
   const total = parseInt(res.headers.get("X-Total") ?? "0", 10);
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`${res.status} – ${body || res.statusText}`);
+    throw new API42Error(res.status, body || res.statusText);
   }
 
   return { data: await res.json() as T, total };

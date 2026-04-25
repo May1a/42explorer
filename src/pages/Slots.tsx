@@ -1,4 +1,5 @@
 import { useMySlots } from "../api/slots";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
 export function SlotsPage() {
   const { data, isLoading, error } = useMySlots({ "page.size": 100 });
@@ -22,15 +23,7 @@ export function SlotsPage() {
         </div>
       )}
 
-      {error && (
-        <div
-          className="rounded-xl border p-4"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-red)" }}
-        >
-          <div className="text-sm font-bold" style={{ color: "var(--color-red)" }}>Error</div>
-          <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>{(error as Error).message}</div>
-        </div>
-      )}
+      {error && <InsufficientScopeCard error={error} />}
 
       {!isLoading && !error && !slots.length && (
         <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
