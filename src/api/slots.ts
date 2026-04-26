@@ -66,7 +66,10 @@ export function useCreateSlot() {
       });
       return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded");
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }),
+    onSuccess: () => {
+      // short delay lets 42's eventually-consistent API settle before refetch
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    },
   });
 }
 
@@ -79,6 +82,30 @@ export function useDeleteSlot() {
       const list = Array.isArray(ids) ? ids : [ids];
       return Promise.all(list.map((id) => slotMutate("DELETE", `/slots/${id}`, token!))).then(() => undefined);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }),
+    onSuccess: () => {
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    },
+  });
+}
+
+export function useUpdateSlot() {
+  const { token, user } = useAuth();
+  const qc = useQueryClient();
+
+  return useMutation<Slot, API42Error, { slotIds: number[]; begin_at: string; end_at: string }>({
+    mutationFn: async ({ slotIds, begin_at, end_at }) => {
+      // delete all old 15-min chunks
+      await Promise.all(slotIds.map((id) => slotMutate("DELETE", `/slots/${id}`, token!)));
+      // create new slot with updated time range
+      const params = new URLSearchParams({
+        "slot[user_id]": String(user!.id),
+        "slot[begin_at]": begin_at,
+        "slot[end_at]": end_at,
+      });
+      return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded") as Promise<Slot>;
+    },
+    onSuccess: () => {
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    },
   });
 }

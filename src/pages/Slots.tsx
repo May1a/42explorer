@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useMySlots, useCreateSlot, useDeleteSlot } from "../api/slots";
+import { useMySlots, useCreateSlot, useDeleteSlot, useUpdateSlot } from "../api/slots";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { Slot, MergedSlot } from "../types";
 
@@ -84,6 +84,16 @@ export function SlotsPage() {
   const [dragDisplay, setDragDisplay] = useState<DragState | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const [resizeGhost, setResizeGhost] = useState<{ top: number; height: number } | null>(null);
+  const resizeGhostRef = useRef<{ top: number; height: number } | null>(null);
+  const isResizing = useRef(false);
+  const resizeRef = useRef<{ slot: MergedSlot; edge: "top" | "bottom" } | null>(null);
+
+  function setResizeGhostBoth(g: { top: number; height: number } | null) {
+    resizeGhostRef.current = g;
+    setResizeGhost(g);
+  }
+
   const nowIndicatorRef = useRef<HTMLDivElement>(null);
   const dayColumnRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -96,6 +106,9 @@ export function SlotsPage() {
   const createRef = useRef(create);
   createRef.current = create;
   const del = useDeleteSlot();
+  const update = useUpdateSlot();
+  const updateRef = useRef(update);
+  updateRef.current = update;
 
   const allSlots = data?.data ?? [];
 
@@ -144,6 +157,18 @@ export function SlotsPage() {
     return Math.min(Math.round(totalMin / 15) * 15, 23 * 60 + 45);
   }
 
+  function handleResizeStart(e: React.MouseEvent, slot: MergedSlot, edge: "top" | "bottom") {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { slot, edge };
+    isResizing.current = true;
+    const begin = new Date(slot.begin_at);
+    const end = new Date(slot.end_at);
+    const top = Math.round((begin.getHours() * 60 + begin.getMinutes()) / 60 * HOUR_HEIGHT);
+    const height = Math.round((end.getTime() - begin.getTime()) / 60_000 / 60 * HOUR_HEIGHT);
+    setResizeGhostBoth({ top, height: Math.max(height, 20) });
+  }
+
   function handleDayMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return;
     if ((e.target as Element).closest("[data-slot]")) return;
@@ -155,11 +180,35 @@ export function SlotsPage() {
     isDragging.current = true;
   }
 
-  // Global mouse handlers for drag
+  // Global mouse handlers for drag & resize
   useEffect(() => {
     function onMove(e: MouseEvent) {
-      if (!isDragging.current || !dragStateRef.current) return;
       const curMin = yToSnappedMin(e.clientY);
+
+      if (isResizing.current && resizeRef.current) {
+        const { slot, edge } = resizeRef.current;
+        const begin = new Date(slot.begin_at);
+        const end = new Date(slot.end_at);
+        const beginMin = begin.getHours() * 60 + begin.getMinutes();
+        const endMin = end.getHours() * 60 + end.getMinutes();
+        let top: number, height: number;
+
+        if (edge === "top") {
+          const newBeginMin = Math.min(Math.max(curMin, 0), endMin - 15);
+          top = Math.round((newBeginMin / 60) * HOUR_HEIGHT);
+          const bottom = Math.round((endMin / 60) * HOUR_HEIGHT);
+          height = Math.max(bottom - top, 20);
+        } else {
+          const newEndMin = Math.max(Math.min(curMin, 23 * 60 + 45), beginMin + 15);
+          top = Math.round((beginMin / 60) * HOUR_HEIGHT);
+          const bottom = Math.round((newEndMin / 60) * HOUR_HEIGHT);
+          height = Math.max(bottom - top, 20);
+        }
+        setResizeGhostBoth({ top, height });
+        return;
+      }
+
+      if (!isDragging.current || !dragStateRef.current) return;
       const next: DragState = {
         startMin: dragStateRef.current.startMin,
         endMin: Math.max(curMin, dragStateRef.current.startMin + 15),
@@ -169,6 +218,41 @@ export function SlotsPage() {
     }
 
     function onUp() {
+      if (isResizing.current) {
+        isResizing.current = false;
+        const r = resizeRef.current;
+        const ghost = resizeGhostRef.current;
+        resizeRef.current = null;
+        setResizeGhostBoth(null);
+
+        if (r && ghost) {
+          const { slot, edge } = r;
+          const begin = new Date(slot.begin_at);
+          const end = new Date(slot.end_at);
+          let newBegin: Date, newEnd: Date;
+
+          if (edge === "top") {
+            const newBeginMin = Math.round((ghost.top / HOUR_HEIGHT) * 60);
+            newBegin = new Date(begin);
+            newBegin.setHours(Math.floor(newBeginMin / 60), newBeginMin % 60, 0, 0);
+            newEnd = new Date(end);
+          } else {
+            const newEndPx = ghost.top + ghost.height;
+            const newEndMin = Math.round((newEndPx / HOUR_HEIGHT) * 60);
+            newBegin = new Date(begin);
+            newEnd = new Date(end);
+            newEnd.setHours(Math.floor(newEndMin / 60), newEndMin % 60, 0, 0);
+          }
+
+          updateRef.current.mutate({
+            slotIds: slot.slotIds,
+            begin_at: newBegin.toISOString(),
+            end_at: newEnd.toISOString(),
+          });
+        }
+        return;
+      }
+
       if (!isDragging.current) return;
       isDragging.current = false;
       const drag = dragStateRef.current;
@@ -337,7 +421,7 @@ export function SlotsPage() {
               className="hidden sm:inline text-[10px] tracking-wider"
               style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
             >
-              drag to create · click × to delete
+              drag to create · drag edges to resize · click × to delete
             </span>
           </div>
 
@@ -518,28 +602,53 @@ export function SlotsPage() {
                   </div>
                 )}
 
+                {/* Resize ghost preview */}
+                {resizeGhost && (
+                  <div
+                    className="absolute left-1 right-1 rounded-lg border pointer-events-none z-20"
+                    style={{
+                      top: resizeGhost.top,
+                      height: Math.max(resizeGhost.height, 4),
+                      background: "color-mix(in srgb, var(--color-primary) 18%, transparent)",
+                      borderColor: "var(--color-primary)",
+                      borderStyle: "dashed",
+                    }}
+                  />
+                )}
+
                 {/* Slot blocks */}
                 {activeSlots.map((slot) => {
                   const begin = new Date(slot.begin_at);
                   const end = new Date(slot.end_at);
                   const style = slotStyle(begin, end);
                   const scaleName = slot.scale_team?.scale?.name;
+                  const isResizingThis = resizeGhost !== null && resizeRef.current?.slot === slot;
+
                   return (
                     <div
                       key={slot.id}
                       data-slot="true"
                       className="absolute left-1 right-1 rounded-lg border px-2 py-1.5 text-[11px] flex flex-col gap-0.5 overflow-hidden group/slot transition-shadow hover:z-10"
                       style={{
-                        ...style,
+                        ...(isResizingThis ? { top: resizeGhost!.top, height: Math.max(resizeGhost!.height, 20) } : style),
                         background:
                           "color-mix(in srgb, var(--color-primary) 10%, var(--color-card))",
                         borderColor:
                           "color-mix(in srgb, var(--color-primary) 35%, transparent)",
                         color: "#e2e8f0",
+                        opacity: isResizingThis ? 0.7 : 1,
                       }}
                       title={`${begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${scaleName ? "\n" + scaleName : ""}`}
                     >
-                      <div className="flex items-center justify-between gap-1">
+                      {/* Resize handle — top */}
+                      <div
+                        data-resize-handle="true"
+                        className="absolute left-0 right-0 top-0 h-2 cursor-ns-resize group/resize"
+                        style={{ zIndex: 5 }}
+                        onMouseDown={(e) => handleResizeStart(e, slot, "top")}
+                      />
+
+                      <div className="flex items-center justify-between gap-1" style={{ zIndex: 1 }}>
                         <span
                           className="font-bold truncate leading-tight"
                           style={{ fontFamily: "var(--font-mono)" }}
@@ -563,10 +672,18 @@ export function SlotsPage() {
                       </div>
                       <span
                         className="truncate text-[10px] leading-tight"
-                        style={{ color: "var(--color-muted)" }}
+                        style={{ color: "var(--color-muted)", zIndex: 1 }}
                       >
                         {scaleName ?? "Available"}
                       </span>
+
+                      {/* Resize handle — bottom */}
+                      <div
+                        data-resize-handle="true"
+                        className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize"
+                        style={{ zIndex: 5 }}
+                        onMouseDown={(e) => handleResizeStart(e, slot, "bottom")}
+                      />
                     </div>
                   );
                 })}
