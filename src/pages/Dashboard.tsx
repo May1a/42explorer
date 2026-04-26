@@ -23,7 +23,7 @@ function StatTile({ label, value, sub, color }: StatTileProps) {
 }
 
 export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: string) => void }) {
-  const { user, login, config } = useAuth();
+  const { user, login } = useAuth();
 
   const campusId = user?.campus_users?.find(c => c.is_primary)?.campus_id;
   const { data: locRes, isLoading: locLoading } = use42Query<Location[]>(
@@ -50,15 +50,9 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
             campus, level, cursus — the data is all yours.
           </p>
         </div>
-        {config?.clientId ? (
-          <button onClick={() => login()} className="btn-primary px-6 py-3">
-            Login with 42 →
-          </button>
-        ) : (
-          <p className="text-xs" style={{ color: "var(--color-faint)" }}>
-            Set up your credentials first via the sidebar.
-          </p>
-        )}
+        <button onClick={() => login()} className="btn-primary px-6 py-3">
+          Login with 42 →
+        </button>
       </div>
     );
   }

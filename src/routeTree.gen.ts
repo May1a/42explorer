@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudentsRouteImport } from './routes/students'
 import { Route as SlotsRouteImport } from './routes/slots'
-import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as My42RouteImport } from './routes/my42'
@@ -32,11 +31,6 @@ const StudentsRoute = StudentsRouteImport.update({
 const SlotsRoute = SlotsRouteImport.update({
   id: '/slots',
   path: '/slots',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -105,7 +99,6 @@ export interface FileRoutesByFullPath {
   '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
-  '/setup': typeof SetupRoute
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
@@ -121,7 +114,6 @@ export interface FileRoutesByTo {
   '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
-  '/setup': typeof SetupRoute
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
@@ -138,7 +130,6 @@ export interface FileRoutesById {
   '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
-  '/setup': typeof SetupRoute
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
@@ -156,7 +147,6 @@ export interface FileRouteTypes {
     | '/my42'
     | '/projects'
     | '/settings'
-    | '/setup'
     | '/slots'
     | '/students'
     | '/profile/$login'
@@ -172,7 +162,6 @@ export interface FileRouteTypes {
     | '/my42'
     | '/projects'
     | '/settings'
-    | '/setup'
     | '/slots'
     | '/students'
     | '/profile/$login'
@@ -188,7 +177,6 @@ export interface FileRouteTypes {
     | '/my42'
     | '/projects'
     | '/settings'
-    | '/setup'
     | '/slots'
     | '/students'
     | '/profile/$login'
@@ -205,7 +193,6 @@ export interface RootRouteChildren {
   My42Route: typeof My42Route
   ProjectsRoute: typeof ProjectsRoute
   SettingsRoute: typeof SettingsRoute
-  SetupRoute: typeof SetupRoute
   SlotsRoute: typeof SlotsRoute
   StudentsRoute: typeof StudentsRoute
   ProfileLoginRoute: typeof ProfileLoginRoute
@@ -226,13 +213,6 @@ declare module '@tanstack/react-router' {
       path: '/slots'
       fullPath: '/slots'
       preLoaderRoute: typeof SlotsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -325,7 +305,6 @@ const rootRouteChildren: RootRouteChildren = {
   My42Route: My42Route,
   ProjectsRoute: ProjectsRoute,
   SettingsRoute: SettingsRoute,
-  SetupRoute: SetupRoute,
   SlotsRoute: SlotsRoute,
   StudentsRoute: StudentsRoute,
   ProfileLoginRoute: ProfileLoginRoute,

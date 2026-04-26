@@ -1,15 +1,12 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { Layout } from "../components/Layout";
-import { SetupPage } from "../pages/Setup";
 import { FullPageSpinner } from "../components/Loading";
 
 function Root() {
-  const { config, loading, authError, logout } = useAuth();
+  const { loading, authError, logout } = useAuth();
 
   if (loading) return <FullPageSpinner />;
-
-  if (!config?.clientId) return <SetupPage />;
 
   if (authError) {
     return (

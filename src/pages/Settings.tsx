@@ -16,7 +16,7 @@ const KNOWN_SCOPES: { scope: string; label: string; description: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { user, config, token, currentScope, hasScope, login, logout } = useAuth();
+  const { user, token, currentScope, hasScope, login, logout } = useAuth();
   const updatePicture = useUpdateProfilePicture();
   const [picture, setPicture] = useState<File | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
@@ -92,10 +92,6 @@ export function SettingsPage() {
                   <span style={{ color: "var(--color-muted)" }}>{token.slice(0, 12)}…</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span style={{ color: "var(--color-faint)" }}>Client ID</span>
-                <span style={{ color: "var(--color-muted)" }}>{config?.clientId ?? "Unknown"}</span>
-              </div>
               <div className="flex justify-between">
                 <span style={{ color: "var(--color-faint)" }}>Scope</span>
                 <span style={{ color: "var(--color-primary)" }}>{currentScope}</span>

@@ -25,7 +25,7 @@ function formatLevel(cursusUsers: any[]): string {
 }
 
 export function Layout({ children }: Props) {
-  const { user, login, logout, config } = useAuth();
+  const { user, login, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = location.pathname;
@@ -228,7 +228,7 @@ export function Layout({ children }: Props) {
             </>
           ) : (
             <button
-              onClick={config?.clientId ? () => login() : () => { closeSidebar(); }}
+              onClick={() => login()}
               className="w-full py-2 text-xs font-bold rounded-md transition-all btn-primary"
             >
               Login with 42
