@@ -1,5 +1,10 @@
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useUpdateProfilePicture } from "../api/me";
 import { openOfficial } from "../lib/redirects";
+
+const MIN_PROFILE_IMAGE_SIZE = 3 * 1024;
+const MAX_PROFILE_IMAGE_SIZE = 1024 * 1024;
 
 const KNOWN_SCOPES: { scope: string; label: string; description: string }[] = [
   { scope: "public",    label: "Public",    description: "Read your profile, campus, projects, evaluations, events, and slots." },
@@ -11,9 +16,47 @@ const KNOWN_SCOPES: { scope: string; label: string; description: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { user, config, token, currentScope, login, logout } = useAuth();
+  const { user, config, token, currentScope, hasScope, login, logout } = useAuth();
+  const updatePicture = useUpdateProfilePicture();
+  const [picture, setPicture] = useState<File | null>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureSuccess, setPictureSuccess] = useState<string | null>(null);
 
   const activeScopes = currentScope.split(" ").filter(Boolean);
+  const canUseProfileScope = hasScope("profil");
+
+  function onPictureChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setPictureSuccess(null);
+    setPictureError(null);
+    setPicture(file);
+
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPictureError("Choose an image file.");
+    } else if (file.size < MIN_PROFILE_IMAGE_SIZE) {
+      setPictureError("42 requires profile images to be at least 3 KB.");
+    } else if (file.size > MAX_PROFILE_IMAGE_SIZE) {
+      setPictureError("42 profile images must be 1 MB or smaller.");
+    }
+  }
+
+  async function onPictureSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setPictureSuccess(null);
+
+    if (!picture || pictureError) return;
+
+    try {
+      await updatePicture.mutateAsync(picture);
+      setPictureSuccess("Profile picture update request accepted.");
+      setPicture(null);
+      form.reset();
+    } catch (error: any) {
+      setPictureError(error?.body || error?.message || "Could not update profile picture.");
+    }
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4 md:space-y-6">
@@ -135,6 +178,71 @@ export function SettingsPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Profile picture */}
+      {user && (
+        <div
+          className="rounded-xl border p-4 md:p-5"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--color-muted)" }}>
+            Profile Picture
+          </h3>
+          <div className="flex items-start gap-4 flex-wrap">
+            <img
+              src={user.image?.versions?.small || user.image?.link}
+              alt=""
+              className="w-16 h-16 rounded-lg object-cover border"
+              style={{ borderColor: "var(--color-border-hi)" }}
+            />
+            <form onSubmit={onPictureSubmit} className="flex-1 min-w-[220px] space-y-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPictureChange}
+                className="block w-full text-xs"
+                style={{ color: "var(--color-muted)" }}
+              />
+              <div className="text-[10px] leading-relaxed" style={{ color: "var(--color-faint)" }}>
+                Uses 42's user update endpoint with <span style={{ fontFamily: "var(--font-mono)" }}>user[image]</span>. The API accepts image files from 3 KB to 1 MB and may require elevated 42 permissions.
+              </div>
+              {!canUseProfileScope && (
+                <div className="flex items-center justify-between gap-3 rounded-lg p-2" style={{ background: "var(--color-card-hi)" }}>
+                  <span className="text-[10px]" style={{ color: "var(--color-muted)" }}>
+                    The profile edit scope is not active for this token.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => login(["profil"])}
+                    className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider transition-all"
+                    style={{ background: "var(--color-primary)", color: "#000" }}
+                  >
+                    Enable
+                  </button>
+                </div>
+              )}
+              {pictureError && (
+                <div className="text-[10px] rounded-lg p-2" style={{ color: "var(--color-red)", background: "color-mix(in srgb, var(--color-red) 10%, transparent)" }}>
+                  {pictureError}
+                </div>
+              )}
+              {pictureSuccess && (
+                <div className="text-[10px] rounded-lg p-2" style={{ color: "var(--color-green)", background: "color-mix(in srgb, var(--color-green) 10%, transparent)" }}>
+                  {pictureSuccess}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={!picture || Boolean(pictureError) || updatePicture.isPending}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: "var(--color-primary)", color: "#000" }}
+              >
+                {updatePicture.isPending ? "Uploading..." : "Update Picture"}
+              </button>
+            </form>
           </div>
         </div>
       )}

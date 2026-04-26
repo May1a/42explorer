@@ -35,7 +35,7 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response(null, {
       headers: {
         "Access-Control-Allow-Origin":  "*",
-        "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Authorization, Content-Type",
       },
     });
@@ -84,7 +84,7 @@ export default async function handler(request: Request): Promise<Response> {
       headers,
       body: request.method === "GET" || request.method === "HEAD"
         ? undefined
-        : await request.text(),
+        : await request.arrayBuffer(),
     });
   } catch (e: any) {
     return Response.json({ error: `Upstream fetch failed: ${e.message}` }, { status: 502 });

@@ -39,6 +39,7 @@ export interface AuthContextValue {
   authError: string | null;
   currentScope: string;
   hasScope: (scope: string) => boolean;
+  refreshUser: () => Promise<void>;
   saveConfig: (cfg: AuthConfig) => void;
   login: (extraScopes?: readonly string[]) => void;
   logout: () => void;
@@ -140,6 +141,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    const res = await fetch("/api/42?path=/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(body || `Could not refresh profile (${res.status})`);
+    }
+    setUser(await res.json());
+  }, [token]);
+
   const saveConfig = useCallback((cfg: AuthConfig) => {
     localStorage.setItem(STORAGE_KEY_CLIENT, cfg.clientId);
     setConfig(cfg);
@@ -171,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ token, user, config, loading, authError, currentScope, hasScope, saveConfig, login, logout }}>
+    <Ctx.Provider value={{ token, user, config, loading, authError, currentScope, hasScope, refreshUser, saveConfig, login, logout }}>
       {children}
     </Ctx.Provider>
   );
