@@ -212,6 +212,10 @@ export interface Slot {
   scale_team: ScaleTeam | null;
 }
 
+export interface MergedSlot extends Slot {
+  slotIds: number[];
+}
+
 export interface Location {
   id: number;
   begin_at: string;

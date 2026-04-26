@@ -74,8 +74,11 @@ export function useDeleteSlot() {
   const { token } = useAuth();
   const qc = useQueryClient();
 
-  return useMutation<void, API42Error, number>({
-    mutationFn: (id) => slotMutate("DELETE", `/slots/${id}`, token!),
+  return useMutation<void, API42Error, number | number[]>({
+    mutationFn: (ids) => {
+      const list = Array.isArray(ids) ? ids : [ids];
+      return Promise.all(list.map((id) => slotMutate("DELETE", `/slots/${id}`, token!))).then(() => undefined);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }),
   });
 }

@@ -1,27 +1,31 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useMySlots, useCreateSlot, useDeleteSlot } from "../api/slots";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
-import type { Slot } from "../types";
+import type { Slot, MergedSlot } from "../types";
 
 const HOUR_HEIGHT = 64;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 // 42 API returns slots as consecutive 15-min chunks — merge them into one block
-function mergeSlots(slots: Slot[]): Slot[] {
+function mergeSlots(slots: Slot[]): MergedSlot[] {
   if (slots.length === 0) return [];
   const sorted = [...slots].sort(
     (a, b) => new Date(a.begin_at).getTime() - new Date(b.begin_at).getTime(),
   );
-  const merged: Slot[] = [{ ...sorted[0] }];
+  const merged: MergedSlot[] = [
+    { ...sorted[0]!, slotIds: [sorted[0]!.id] },
+  ];
   for (let i = 1; i < sorted.length; i++) {
-    const last = merged[merged.length - 1];
+    const last = merged[merged.length - 1]!;
     const lastEnd = new Date(last.end_at).getTime();
-    const nextStart = new Date(sorted[i].begin_at).getTime();
+    const next = sorted[i]!;
+    const nextStart = new Date(next.begin_at).getTime();
     if (nextStart <= lastEnd + 60_000) {
-      const nextEnd = new Date(sorted[i].end_at).getTime();
-      if (nextEnd > lastEnd) last.end_at = sorted[i].end_at;
+      const nextEnd = new Date(next.end_at).getTime();
+      if (nextEnd > lastEnd) last.end_at = next.end_at;
+      last.slotIds.push(next.id);
     } else {
-      merged.push({ ...sorted[i] });
+      merged.push({ ...next, slotIds: [next.id] });
     }
   }
   return merged;
@@ -547,7 +551,7 @@ export function SlotsPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm("Delete this slot?")) del.mutate(slot.id);
+                            if (confirm("Delete this slot?")) del.mutate(slot.slotIds);
                           }}
                           disabled={del.isPending}
                           className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold opacity-0 group-hover/slot:opacity-100 transition-all hover:bg-red-500/25"
