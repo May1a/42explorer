@@ -609,7 +609,7 @@ export function SlotsPage() {
 
             {/* Scrollable time grid */}
             <div style={{ overflowY: "auto", maxHeight: "calc(100dvh - 19rem)", WebkitOverflowScrolling: "touch" }}>
-            <div className="flex" style={{ userSelect: "none" }}>
+            <div className="flex" style={{ userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
               {/* Time labels */}
               <div
                 className="w-12 md:w-14 shrink-0"
@@ -781,6 +781,9 @@ export function SlotsPage() {
                           "color-mix(in srgb, var(--color-primary) 35%, transparent)",
                         color: "#e2e8f0",
                         opacity: isResizingThis ? 0.7 : 1,
+                        userSelect: "none",
+                        WebkitUserSelect: "none",
+                        WebkitTouchCallout: "none",
                       }}
                       title={`${begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${scaleName ? "\n" + scaleName : ""}`}
                     >
@@ -808,8 +811,8 @@ export function SlotsPage() {
                             if (confirm("Delete this slot?")) del.mutate(slot.slotIds);
                           }}
                           disabled={del.isPending}
-                          className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold opacity-0 group-hover/slot:opacity-100 transition-all hover:bg-red-500/25"
-                          style={{ color: "var(--color-red)" }}
+                          className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold opacity-60 sm:opacity-0 sm:group-hover/slot:opacity-100 transition-all hover:bg-red-500/25"
+                          style={{ color: "var(--color-red)", WebkitTapHighlightColor: "transparent" }}
                           title="Delete slot"
                         >
                           ×
