@@ -14,9 +14,11 @@ import { Route as SlotsRouteImport } from './routes/slots'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as My42RouteImport } from './routes/my42'
 import { Route as LocationsRouteImport } from './routes/locations'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as EvaluationsRouteImport } from './routes/evaluations'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthErrorRouteImport } from './routes/auth-error'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileLoginRouteImport } from './routes/profile.$login'
@@ -46,6 +48,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const My42Route = My42RouteImport.update({
+  id: '/my42',
+  path: '/my42',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocationsRoute = LocationsRouteImport.update({
   id: '/locations',
   path: '/locations',
@@ -59,6 +66,11 @@ const EventsRoute = EventsRouteImport.update({
 const EvaluationsRoute = EvaluationsRouteImport.update({
   id: '/evaluations',
   path: '/evaluations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthErrorRoute = AuthErrorRouteImport.update({
@@ -80,9 +92,11 @@ const ProfileLoginRoute = ProfileLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth-error': typeof AuthErrorRoute
+  '/dashboard': typeof DashboardRoute
   '/evaluations': typeof EvaluationsRoute
   '/events': typeof EventsRoute
   '/locations': typeof LocationsRoute
+  '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
@@ -93,9 +107,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth-error': typeof AuthErrorRoute
+  '/dashboard': typeof DashboardRoute
   '/evaluations': typeof EvaluationsRoute
   '/events': typeof EventsRoute
   '/locations': typeof LocationsRoute
+  '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
@@ -107,9 +123,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth-error': typeof AuthErrorRoute
+  '/dashboard': typeof DashboardRoute
   '/evaluations': typeof EvaluationsRoute
   '/events': typeof EventsRoute
   '/locations': typeof LocationsRoute
+  '/my42': typeof My42Route
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
@@ -122,9 +140,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth-error'
+    | '/dashboard'
     | '/evaluations'
     | '/events'
     | '/locations'
+    | '/my42'
     | '/projects'
     | '/settings'
     | '/setup'
@@ -135,9 +155,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth-error'
+    | '/dashboard'
     | '/evaluations'
     | '/events'
     | '/locations'
+    | '/my42'
     | '/projects'
     | '/settings'
     | '/setup'
@@ -148,9 +170,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth-error'
+    | '/dashboard'
     | '/evaluations'
     | '/events'
     | '/locations'
+    | '/my42'
     | '/projects'
     | '/settings'
     | '/setup'
@@ -162,9 +186,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthErrorRoute: typeof AuthErrorRoute
+  DashboardRoute: typeof DashboardRoute
   EvaluationsRoute: typeof EvaluationsRoute
   EventsRoute: typeof EventsRoute
   LocationsRoute: typeof LocationsRoute
+  My42Route: typeof My42Route
   ProjectsRoute: typeof ProjectsRoute
   SettingsRoute: typeof SettingsRoute
   SetupRoute: typeof SetupRoute
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my42': {
+      id: '/my42'
+      path: '/my42'
+      fullPath: '/my42'
+      preLoaderRoute: typeof My42RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/locations': {
       id: '/locations'
       path: '/locations'
@@ -229,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/evaluations'
       fullPath: '/evaluations'
       preLoaderRoute: typeof EvaluationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth-error': {
@@ -258,9 +298,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthErrorRoute: AuthErrorRoute,
+  DashboardRoute: DashboardRoute,
   EvaluationsRoute: EvaluationsRoute,
   EventsRoute: EventsRoute,
   LocationsRoute: LocationsRoute,
+  My42Route: My42Route,
   ProjectsRoute: ProjectsRoute,
   SettingsRoute: SettingsRoute,
   SetupRoute: SetupRoute,

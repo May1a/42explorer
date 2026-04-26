@@ -7,7 +7,8 @@ interface Props {
 }
 
 const NAV = [
-  { to: "/" as const,           label: "Dashboard",     icon: "⬡" },
+  { to: "/" as const,           label: "My 42",         icon: "⬡" },
+  { to: "/dashboard" as const,  label: "Dashboard",     icon: "◉" },
   { to: "/students" as const,   label: "Students",      icon: "◎" },
   { to: "/projects" as const,   label: "Projects",      icon: "◉" },
   { to: "/evaluations" as const,label: "Evaluations",   icon: "◎" },
