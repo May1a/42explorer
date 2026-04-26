@@ -87,7 +87,7 @@ function kickoffMonth(value: string) {
 function cursusUserToStudent(cursusUser: CursusUser): FortyTwoUser {
   return {
     ...cursusUser.user,
-    id: cursusUser.user.id ?? cursusUser.user_id,
+    id: cursusUser.user.id,
     login: cursusUser.user.login ?? "",
     cursus_users: [cursusUser],
   } as FortyTwoUser;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMyScaleTeams } from "../api/scale-teams";
+import { useAuth } from "../context/AuthContext";
 import type { ScaleTeam } from "../types";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
@@ -7,9 +8,10 @@ type Tab = "as_corrector" | "as_corrected";
 
 export function EvaluationsPage() {
   const [tab, setTab] = useState<Tab>("as_corrected");
+  const { hasScope } = useAuth();
 
-  const { data: corrByData, isLoading: corrByLoad, error: corrByErr } = useMyScaleTeams("as_corrected");
-  const { data: corrForData, isLoading: corrForLoad, error: corrForErr } = useMyScaleTeams("as_corrector");
+  const { data: corrByData, isLoading: corrByLoad, error: corrByErr } = useMyScaleTeams("as_corrected", undefined, { enabled: hasScope("projects") });
+  const { data: corrForData, isLoading: corrForLoad, error: corrForErr } = useMyScaleTeams("as_corrector", undefined, { enabled: hasScope("projects") });
 
   const items = tab === "as_corrected" ? corrByData?.data : corrForData?.data;
   const loading = tab === "as_corrected" ? corrByLoad : corrForLoad;

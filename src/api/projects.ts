@@ -5,30 +5,30 @@ import { API42Error } from "../lib/api-error";
 import type { Project, ProjectUser } from "../types";
 import type { Params } from "../hooks/use42API";
 
-export function useProjects(params?: Params) {
-  return use42ApiQuery<Project[]>("/projects", params, { staleTime: 3600_000 });
+export function useProjects(params?: Params, opts?: { staleTime?: number; enabled?: boolean }) {
+  return use42ApiQuery<Project[]>("/projects", params, { staleTime: 3600_000, ...opts });
 }
 
 export function useProject(id?: number) {
   return use42ApiQuery<Project>(id != null ? `/projects/${id}` : null, undefined, { staleTime: 3600_000 });
 }
 
-export function useCursusProjects(cursusId?: number, params?: Params) {
+export function useCursusProjects(cursusId?: number, params?: Params, opts?: { staleTime?: number; enabled?: boolean }) {
   return use42ApiQuery<Project[]>("/projects", {
     "filter.cursus_id": cursusId,
     "page.size": 200,
     sort: "name",
     ...params,
-  }, { staleTime: 3600_000 });
+  }, { staleTime: 3600_000, ...opts });
 }
 
-export function useProjectUsers(userId?: number, params?: Params) {
+export function useProjectUsers(userId?: number, params?: Params, opts?: { staleTime?: number; enabled?: boolean }) {
   const path = userId != null ? `/users/${userId}/projects_users` : "/me/projects_users";
   return use42ApiQuery<ProjectUser[]>(path, {
     "page.size": 100,
     sort: "-updated_at",
     ...params,
-  });
+  }, opts);
 }
 
 async function projectsMutate<T>(

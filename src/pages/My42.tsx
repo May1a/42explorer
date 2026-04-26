@@ -5,6 +5,7 @@ import { useProjectUsers, useCursusProjects, useStartProject, useSubmitProject }
 import { useMyScaleTeams } from "../api/scale-teams";
 import { useMySlots, useCreateSlot } from "../api/slots";
 import { LevelBar } from "../components/LevelBar";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { ProjectUser, Project, ScaleTeam, Slot } from "../types";
 import { openOfficial } from "../lib/redirects";
 import { useQueryClient } from "@tanstack/react-query";
@@ -63,15 +64,18 @@ function EmptyState({ text }: { text: string }) {
 /* ── Main Page ───────────────────────────────────────────────────────────── */
 
 export function My42Page() {
-  const { user, login, currentScope } = useAuth();
+  const { user, login, currentScope, hasScope } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: myProjectsData, isLoading: mpLoading } = useProjectUsers(user?.id);
-  const { data: cursusProjectsData, isLoading: cpLoading } = useCursusProjects(21);
-  const { data: correctedData, isLoading: cByLoading } = useMyScaleTeams("as_corrected");
-  const { data: correctorData, isLoading: cForLoading } = useMyScaleTeams("as_corrector");
-  const { data: slotsData, isLoading: slotsLoading } = useMySlots({ "page.size": 100, sort: "begin_at" });
+  const { data: myProjectsData, isLoading: mpLoading, error: mpError } = useProjectUsers(user?.id);
+  const { data: cursusProjectsData, isLoading: cpLoading, error: cpError } = useCursusProjects(21, undefined, { enabled: hasScope("projects") });
+  const { data: correctedData, isLoading: cByLoading, error: cByError } = useMyScaleTeams("as_corrected");
+  const { data: correctorData, isLoading: cForLoading, error: cForError } = useMyScaleTeams("as_corrector");
+  const { data: slotsData, isLoading: slotsLoading, error: slotsError } = useMySlots({
+    "page.size": 100,
+    sort: "begin_at",
+  }, { enabled: hasScope("projects") });
 
   const startProject = useStartProject();
   const submitProject = useSubmitProject();
@@ -268,7 +272,9 @@ export function My42Page() {
             <section className="section-card p-5 animate-fade-in-up stagger-3">
               <SectionHeader title={`Current Project${currentProjects.length !== 1 ? "s" : ""}`} count={currentProjects.length} />
 
-              {currentProjects.length === 0 ? (
+              {mpError ? (
+                <InsufficientScopeCard error={mpError} />
+              ) : currentProjects.length === 0 ? (
                 <EmptyState text="No active projects. Start one below." />
               ) : (
                 <div className="space-y-2">
@@ -287,9 +293,13 @@ export function My42Page() {
 
             {/* Available Projects */}
             <section className="section-card p-5 animate-fade-in-up stagger-4">
-              <SectionHeader title="Available Projects" count={availableProjects.length} />
+              <SectionHeader title="Available Projects" count={hasScope("projects") ? availableProjects.length : undefined} />
 
-              {availableProjects.length === 0 ? (
+              {!hasScope("projects") ? (
+                <EmptyState text="Add the projects scope to see available projects. Projects scope is needed to view this section." />
+              ) : cpError ? (
+                <InsufficientScopeCard error={cpError} />
+              ) : availableProjects.length === 0 ? (
                 <EmptyState text="No available projects found for your cursus." />
               ) : (
                 <div className="space-y-1 max-h-[480px] overflow-y-auto pr-1">
@@ -317,7 +327,13 @@ export function My42Page() {
             <section className="section-card p-5 animate-fade-in-up stagger-3">
               <SectionHeader title="Evaluations" count={myEvals.length} />
 
-              {myEvals.length === 0 ? (
+              {cByError && !cForError ? (
+                <InsufficientScopeCard error={cByError} />
+              ) : cForError && !cByError ? (
+                <InsufficientScopeCard error={cForError} />
+              ) : cByError && cForError ? (
+                <InsufficientScopeCard error={cByError} />
+              ) : myEvals.length === 0 ? (
                 <EmptyState text="No evaluations yet." />
               ) : (
                 <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
@@ -342,17 +358,23 @@ export function My42Page() {
                 >
                   My Slots
                 </h2>
-                <button
-                  onClick={handleQuickSlot}
-                  disabled={createSlot.isPending}
-                  className="text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
-                  style={{ background: "var(--color-primary)", color: "#000" }}
-                >
-                  {createSlot.isPending ? "..." : "+1h"}
-                </button>
+                {hasScope("projects") && (
+                  <button
+                    onClick={handleQuickSlot}
+                    disabled={createSlot.isPending}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
+                    style={{ background: "var(--color-primary)", color: "#000" }}
+                  >
+                    {createSlot.isPending ? "..." : "+1h"}
+                  </button>
+                )}
               </div>
 
-              {upcomingSlots.length === 0 ? (
+              {!hasScope("projects") ? (
+                <EmptyState text="Projects scope is needed to view slots." />
+              ) : slotsError ? (
+                <InsufficientScopeCard error={slotsError} />
+              ) : upcomingSlots.length === 0 ? (
                 <EmptyState text="No upcoming slots. Click +1h to open a slot." />
               ) : (
                 <div className="space-y-1.5">

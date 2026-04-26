@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { useProject, useProjectUsers, useSubmitProject } from "../api/projects";
 import { useMyScaleTeams } from "../api/scale-teams";
+import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import { openOfficial } from "../lib/redirects";
 import type { ProjectUser } from "../types";
 
@@ -249,16 +250,16 @@ export function ProjectPage() {
   const { id } = useParams({ from: "/project/$id" });
   const projectId = Number(id);
   const navigate = useNavigate();
-  const { user, login, currentScope } = useAuth();
+  const { user, login, currentScope, hasScope } = useAuth();
 
-  const { data: projectData, isLoading: projectLoading } = useProject(projectId);
-  const { data: attemptsData, isLoading: attemptsLoading } = useProjectUsers(user?.id, {
+  const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(projectId);
+  const { data: attemptsData, isLoading: attemptsLoading, error: attemptsError } = useProjectUsers(user?.id, {
     "filter[project_id]": projectId,
     "page.size": 50,
     sort: "-occurrence",
   });
-  const { data: correctedData } = useMyScaleTeams("as_corrected");
-  const { data: correctorData } = useMyScaleTeams("as_corrector");
+  const { data: correctedData, error: correctedError } = useMyScaleTeams("as_corrected", undefined, { enabled: hasScope("projects") });
+  const { data: correctorData, error: correctorError } = useMyScaleTeams("as_corrector", undefined, { enabled: hasScope("projects") });
 
   const submitProject = useSubmitProject();
 
@@ -318,6 +319,16 @@ export function ProjectPage() {
             <div className="skeleton h-56 w-full" />
             <div className="skeleton h-32 w-full" />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (projectError) {
+    return (
+      <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-4">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <InsufficientScopeCard error={projectError} />
         </div>
       </div>
     );
@@ -435,7 +446,9 @@ export function ProjectPage() {
         {/* ── Main content ── */}
         <div className="space-y-5">
           {/* Current team */}
-          {currentAttempt && (
+          {attemptsError ? (
+            <InsufficientScopeCard error={attemptsError} />
+          ) : currentAttempt ? (
             <TeamCard
               pu={currentAttempt}
               userLogin={user?.login ?? "user"}
@@ -445,10 +458,16 @@ export function ProjectPage() {
               isSubmitting={submitProject.isPending}
               onSubmit={() => handleSubmit(currentAttempt)}
             />
-          )}
+          ) : null}
 
           {/* Evaluations */}
-          {projectEvals.length > 0 && (
+          {correctedError && !correctorError ? (
+            <InsufficientScopeCard error={correctedError} />
+          ) : correctorError && !correctedError ? (
+            <InsufficientScopeCard error={correctorError} />
+          ) : correctedError && correctorError ? (
+            <InsufficientScopeCard error={correctedError} />
+          ) : projectEvals.length > 0 ? (
             <div className="section-card p-5 animate-fade-in-up stagger-3">
               <h2
                 className="text-[11px] font-semibold uppercase tracking-widest mb-4 accent-line"
@@ -491,6 +510,20 @@ export function ProjectPage() {
                 ))}
               </div>
             </div>
+          ) : null}
+
+          {!hasScope("projects") && !correctedError && !correctorError && projectEvals.length === 0 && (
+            <div className="section-card p-5 animate-fade-in-up stagger-3">
+              <h2
+                className="text-[11px] font-semibold uppercase tracking-widest mb-4 accent-line"
+                style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
+              >
+                Evaluations
+              </h2>
+              <p className="text-xs text-center py-2" style={{ color: "var(--color-faint)" }}>
+                Projects scope is needed to view evaluations.
+              </p>
+            </div>
           )}
 
           {/* Old teams */}
@@ -517,7 +550,7 @@ export function ProjectPage() {
           )}
 
           {/* No attempts yet */}
-          {attempts.length === 0 && (
+          {!attemptsError && attempts.length === 0 && (
             <div
               className="section-card p-8 text-center animate-fade-in-up stagger-3"
             >

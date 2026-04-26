@@ -5,12 +5,12 @@ import { API42Error } from "../lib/api-error";
 import type { ScaleTeam } from "../types";
 import type { Params } from "../hooks/use42API";
 
-export function useMyScaleTeams(kind: "as_corrector" | "as_corrected", params?: Params) {
+export function useMyScaleTeams(kind: "as_corrector" | "as_corrected", params?: Params, opts?: { enabled?: boolean }) {
   return use42ApiQuery<ScaleTeam[]>(`/me/scale_teams/${kind}`, {
     "page.size": 50,
     sort: "-begin_at",
     ...params,
-  });
+  }, opts);
 }
 
 export function useScaleTeam(id: number) {

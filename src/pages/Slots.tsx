@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useMySlots, useCreateSlot, useDeleteSlot, useUpdateSlot } from "../api/slots";
+import { useAuth } from "../context/AuthContext";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 import type { Slot, MergedSlot } from "../types";
 
@@ -80,6 +81,8 @@ export function SlotsPage() {
     return d;
   }, []);
 
+  const { hasScope } = useAuth();
+
   const [activeDate, setActiveDate] = useState(today);
   const [dragDisplay, setDragDisplay] = useState<DragState | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -101,7 +104,7 @@ export function SlotsPage() {
   const activeDateRef = useRef(activeDate);
   activeDateRef.current = activeDate;
 
-  const { data, isLoading, error } = useMySlots({ "page.size": 200 });
+  const { data, isLoading, error } = useMySlots({ "page.size": 200 }, { enabled: hasScope("projects") });
   const create = useCreateSlot();
   const createRef = useRef(create);
   createRef.current = create;
@@ -373,8 +376,23 @@ export function SlotsPage() {
       {/* Error */}
       {error && <InsufficientScopeCard error={error} />}
 
+      {/* Scope missing */}
+      {!isLoading && !error && !hasScope("projects") && (
+        <div
+          className="rounded-xl border p-6 md:p-10 flex flex-col items-center justify-center gap-3 text-center"
+          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        >
+          <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+            Projects scope is needed to access slots.
+          </p>
+          <p className="text-xs" style={{ color: "var(--color-faint)" }}>
+            Re-authorize with the <span style={{ color: "var(--color-primary)" }}>projects</span> scope in your settings.
+          </p>
+        </div>
+      )}
+
       {/* Content */}
-      {!isLoading && !error && (
+      {!isLoading && !error && hasScope("projects") && (
         <>
           {/* Day navigation */}
           <div className="flex items-center justify-between gap-2">

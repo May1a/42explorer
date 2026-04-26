@@ -5,12 +5,11 @@ import { API42Error } from "../lib/api-error";
 import type { Params } from "../hooks/use42API";
 import type { Slot } from "../types";
 
-export function useMySlots(params?: Params) {
+export function useMySlots(params?: Params, opts?: { enabled?: boolean }) {
   return use42ApiQuery<Slot[]>("/me/slots", {
     "page.size": 100,
-    sort: "-begin_at",
     ...params,
-  });
+  }, opts);
 }
 
 export function useUserSlots(userId: number, params?: Params) {
@@ -64,7 +63,7 @@ export function useCreateSlot() {
         "slot[begin_at]": slot.begin_at,
         "slot[end_at]": slot.end_at,
       });
-      return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded");
+      return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded") as Promise<Slot>;
     },
     onSuccess: () => {
       // short delay lets 42's eventually-consistent API settle before refetch

@@ -16,7 +16,7 @@ class RateLimiter {
   nextAvailableIn(): number {
     this.prune();
     if (this.timestamps.length < this.maxRequests) return 0;
-    const oldest = this.timestamps[0];
+    const oldest = this.timestamps[0]!;
     return Math.max(0, oldest + this.windowMs - Date.now());
   }
 
@@ -36,7 +36,7 @@ class RateLimiter {
 
   private prune(): void {
     const cutoff = Date.now() - this.windowMs;
-    while (this.timestamps.length > 0 && this.timestamps[0] <= cutoff) {
+    while (this.timestamps.length > 0 && this.timestamps[0]! <= cutoff) {
       this.timestamps.shift();
     }
   }

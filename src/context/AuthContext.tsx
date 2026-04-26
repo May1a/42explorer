@@ -38,6 +38,7 @@ export interface AuthContextValue {
   loading: boolean;
   authError: string | null;
   currentScope: string;
+  hasScope: (scope: string) => boolean;
   saveConfig: (cfg: AuthConfig) => void;
   login: (extraScopes?: readonly string[]) => void;
   logout: () => void;
@@ -155,6 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = `https://api.intra.42.fr/oauth/authorize?${params}`;
   }, [config, currentScope]);
 
+  const hasScope = useCallback((scope: string) => {
+    return normalizeScopes(currentScope).includes(scope);
+  }, [currentScope]);
+
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     localStorage.removeItem(STORAGE_KEY_EXPIRY);
@@ -166,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ token, user, config, loading, authError, currentScope, saveConfig, login, logout }}>
+    <Ctx.Provider value={{ token, user, config, loading, authError, currentScope, hasScope, saveConfig, login, logout }}>
       {children}
     </Ctx.Provider>
   );

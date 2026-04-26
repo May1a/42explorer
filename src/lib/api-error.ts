@@ -22,7 +22,7 @@ export class API42Error extends Error {
   get neededScopes(): string[] {
     try {
       const match = this.body.match(/the following scopes:\s*\[([^\]]+)\]/);
-      if (match) return match[1].split(",").map(s => s.trim());
+      if (match && match[1]) return match[1].split(",").map(s => s.trim());
     } catch {}
     const lower = this.body.toLowerCase();
     if (lower.includes("projects")) return ["projects"];
