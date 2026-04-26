@@ -104,6 +104,7 @@ export function SlotsPage() {
   const [activeDate, setActiveDate] = useState(today);
   const [dragDisplay, setDragDisplay] = useState<DragState | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState(false);
 
   const [resizeGhost, setResizeGhost] = useState<{ top: number; height: number } | null>(null);
   const resizeGhostRef = useRef<{ top: number; height: number } | null>(null);
@@ -242,9 +243,9 @@ export function SlotsPage() {
 
   function handleDayTouchStart(e: React.TouchEvent) {
     if ((e.target as Element).closest("[data-slot]")) return;
-    if (!(e.target as Element).closest("[data-touch-create-lane]")) return;
+    if (!createMode) return;
     e.preventDefault();
-    const startMin = yToSnappedMin(e.touches[0].clientY);
+    const startMin = yToSnappedMin(e.touches[0]!.clientY);
     if (rangeStartsSoon(startMin)) {
       showTooSoonError();
       return;
@@ -300,7 +301,7 @@ export function SlotsPage() {
     function onTouchMove(e: TouchEvent) {
       if (!isDragging.current && !isResizing.current) return;
       e.preventDefault();
-      handleMove(e.touches[0].clientY);
+      handleMove(e.touches[0]!.clientY);
     }
 
     function onUp() {
@@ -532,6 +533,18 @@ export function SlotsPage() {
             >
               drag to create · drag edges to resize · click × to delete
             </span>
+            <button
+              className="sm:hidden text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all active:scale-95"
+              onClick={() => setCreateMode((m) => !m)}
+              style={{
+                background: createMode ? "var(--color-primary)" : "transparent",
+                borderColor: createMode ? "var(--color-primary)" : "var(--color-border)",
+                color: createMode ? "#000" : "var(--color-muted)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {createMode ? "✓ CREATING" : "+ CREATE"}
+            </button>
           </div>
 
           {/* Day strip */}
@@ -625,9 +638,11 @@ export function SlotsPage() {
                 className="flex-1 relative border-l"
                   style={{
                     height: `${24 * HOUR_HEIGHT}px`,
-                    borderColor: "var(--color-border)",
+                    borderColor: createMode
+                      ? "var(--color-primary)"
+                      : "var(--color-border)",
                     cursor: dragDisplay ? "ns-resize" : "crosshair",
-                    touchAction: "pan-y",
+                    touchAction: createMode ? "none" : "pan-y",
                   }}
                 onMouseDown={handleDayMouseDown}
                 onTouchStart={handleDayTouchStart}
@@ -670,19 +685,6 @@ export function SlotsPage() {
                     title="Slots must start at least 30 minutes from now"
                   />
                 )}
-
-                {/* Touch create lane; the rest of the column remains safe for vertical scrolling. */}
-                <div
-                  data-touch-create-lane="true"
-                  className="absolute right-0 bottom-0 z-[2] w-9 md:hidden"
-                  style={{
-                    top: invalidAreaHeight,
-                    touchAction: "none",
-                    borderLeft: "1px dotted color-mix(in srgb, var(--color-primary) 20%, transparent)",
-                    background:
-                      "linear-gradient(to left, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent)",
-                  }}
-                />
 
                 {/* Current time indicator */}
                 {isToday && (

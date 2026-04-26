@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { API42Error } from "../lib/api-error";
 import type { Params } from "../hooks/use42API";
+import type { API42Result } from "../hooks/use42API";
 import type { Slot } from "../types";
 
 export function useMySlots(params?: Params, opts?: { enabled?: boolean }) {
@@ -65,9 +66,15 @@ export function useCreateSlot() {
       });
       return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded") as Promise<Slot>;
     },
-    onSuccess: () => {
-      // short delay lets 42's eventually-consistent API settle before refetch
-      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    onSuccess: (newSlot) => {
+      qc.setQueriesData<API42Result<Slot[]>>(
+        { queryKey: ["42", "/me/slots"] },
+        (old) => {
+          if (!old?.data) return old;
+          return { ...old, data: [...old.data, newSlot] };
+        },
+      );
+      setTimeout(() => qc.refetchQueries({ queryKey: ["42", "/me/slots"] }), 500);
     },
   });
 }
@@ -81,8 +88,16 @@ export function useDeleteSlot() {
       const list = Array.isArray(ids) ? ids : [ids];
       return Promise.all(list.map((id) => slotMutate("DELETE", `/slots/${id}`, token!))).then(() => undefined);
     },
-    onSuccess: () => {
-      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    onSuccess: (_data, ids) => {
+      const list = Array.isArray(ids) ? ids : [ids];
+      qc.setQueriesData<API42Result<Slot[]>>(
+        { queryKey: ["42", "/me/slots"] },
+        (old) => {
+          if (!old?.data) return old;
+          return { ...old, data: old.data.filter((s) => !list.includes(s.id)) };
+        },
+      );
+      setTimeout(() => qc.refetchQueries({ queryKey: ["42", "/me/slots"] }), 500);
     },
   });
 }
@@ -103,8 +118,16 @@ export function useUpdateSlot() {
       });
       return slotMutate("POST", "/slots", token!, params, "application/x-www-form-urlencoded") as Promise<Slot>;
     },
-    onSuccess: () => {
-      setTimeout(() => qc.invalidateQueries({ queryKey: ["42", "/me/slots"] }), 300);
+    onSuccess: (newSlot, vars) => {
+      qc.setQueriesData<API42Result<Slot[]>>(
+        { queryKey: ["42", "/me/slots"] },
+        (old) => {
+          if (!old?.data) return old;
+          const filtered = old.data.filter((s) => !vars.slotIds.includes(s.id));
+          return { ...old, data: [...filtered, newSlot] };
+        },
+      );
+      setTimeout(() => qc.refetchQueries({ queryKey: ["42", "/me/slots"] }), 500);
     },
   });
 }
