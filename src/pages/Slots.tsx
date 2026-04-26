@@ -172,6 +172,18 @@ export function SlotsPage() {
     setResizeGhostBoth({ top, height: Math.max(height, 20) });
   }
 
+  function handleResizeTouchStart(e: React.TouchEvent, slot: MergedSlot, edge: "top" | "bottom") {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { slot, edge };
+    isResizing.current = true;
+    const begin = new Date(slot.begin_at);
+    const end = new Date(slot.end_at);
+    const top = Math.round((begin.getHours() * 60 + begin.getMinutes()) / 60 * HOUR_HEIGHT);
+    const height = Math.round((end.getTime() - begin.getTime()) / 60_000 / 60 * HOUR_HEIGHT);
+    setResizeGhostBoth({ top, height: Math.max(height, 20) });
+  }
+
   function handleDayMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return;
     if ((e.target as Element).closest("[data-slot]")) return;
@@ -183,10 +195,20 @@ export function SlotsPage() {
     isDragging.current = true;
   }
 
+  function handleDayTouchStart(e: React.TouchEvent) {
+    if ((e.target as Element).closest("[data-slot]")) return;
+    e.preventDefault();
+    const startMin = yToSnappedMin(e.touches[0].clientY);
+    const initial: DragState = { startMin, endMin: startMin + 15 };
+    dragStateRef.current = initial;
+    setDragDisplay(initial);
+    isDragging.current = true;
+  }
+
   // Global mouse handlers for drag & resize
   useEffect(() => {
-    function onMove(e: MouseEvent) {
-      const curMin = yToSnappedMin(e.clientY);
+    function handleMove(clientY: number) {
+      const curMin = yToSnappedMin(clientY);
 
       if (isResizing.current && resizeRef.current) {
         const { slot, edge } = resizeRef.current;
@@ -218,6 +240,15 @@ export function SlotsPage() {
       };
       dragStateRef.current = next;
       setDragDisplay(next);
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      handleMove(e.clientY);
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      e.preventDefault();
+      handleMove(e.touches[0].clientY);
     }
 
     function onUp() {
@@ -276,11 +307,15 @@ export function SlotsPage() {
       }
     }
 
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onUp);
     };
   }, []);
 
@@ -524,12 +559,14 @@ export function SlotsPage() {
               <div
                 ref={dayColumnRef}
                 className="flex-1 relative border-l"
-                style={{
-                  height: `${24 * HOUR_HEIGHT}px`,
-                  borderColor: "var(--color-border)",
-                  cursor: dragDisplay ? "ns-resize" : "crosshair",
-                }}
+                  style={{
+                    height: `${24 * HOUR_HEIGHT}px`,
+                    borderColor: "var(--color-border)",
+                    cursor: dragDisplay ? "ns-resize" : "crosshair",
+                    touchAction: "none",
+                  }}
                 onMouseDown={handleDayMouseDown}
+                onTouchStart={handleDayTouchStart}
               >
                 {/* Hour rows */}
                 {HOURS.map((h) => (
@@ -655,8 +692,9 @@ export function SlotsPage() {
                       <div
                         data-resize-handle="true"
                         className="absolute left-0 right-0 top-0 h-2 cursor-ns-resize group/resize"
-                        style={{ zIndex: 5 }}
+                        style={{ zIndex: 5, touchAction: "none" }}
                         onMouseDown={(e) => handleResizeStart(e, slot, "top")}
+                        onTouchStart={(e) => handleResizeTouchStart(e, slot, "top")}
                       />
 
                       <div className="flex items-center justify-between gap-1" style={{ zIndex: 1 }}>
@@ -692,8 +730,9 @@ export function SlotsPage() {
                       <div
                         data-resize-handle="true"
                         className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize"
-                        style={{ zIndex: 5 }}
+                        style={{ zIndex: 5, touchAction: "none" }}
                         onMouseDown={(e) => handleResizeStart(e, slot, "bottom")}
+                        onTouchStart={(e) => handleResizeTouchStart(e, slot, "bottom")}
                       />
                     </div>
                   );
