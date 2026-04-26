@@ -140,7 +140,7 @@ export function SetupPage() {
                 <span>Client ID saved. Ready to authenticate.</span>
               </div>
               <button
-                onClick={login}
+                onClick={() => login()}
                 className="w-full py-3 rounded-xl text-sm font-bold transition-all"
                 style={{ background: "var(--color-purple)", color: "#fff" }}
               >

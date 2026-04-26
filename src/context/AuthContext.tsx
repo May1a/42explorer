@@ -39,11 +39,28 @@ export interface AuthContextValue {
   authError: string | null;
   currentScope: string;
   saveConfig: (cfg: AuthConfig) => void;
-  login: (extraScopes?: string[]) => void;
+  login: (extraScopes?: readonly string[]) => void;
   logout: () => void;
 }
 
 const Ctx = createContext<AuthContextValue>(null!);
+
+function normalizeScopes(value: unknown): string[] {
+  const scopes =
+    typeof value === "string"
+      ? value.split(/\s+/)
+      : Array.isArray(value)
+        ? value
+        : [];
+
+  return scopes
+    .map((scope) => String(scope).trim())
+    .filter(Boolean);
+}
+
+function buildScopeParam(currentScope: string, extraScopes: unknown) {
+  return Array.from(new Set(["public", ...normalizeScopes(currentScope), ...normalizeScopes(extraScopes)])).join(" ");
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token,        setToken]        = useState<string | null>(null);
@@ -127,17 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConfig(cfg);
   }, []);
 
-  const login = useCallback((extraScopes?: string[]) => {
+  const login = useCallback((extraScopes?: readonly string[]) => {
     if (!config?.clientId) return;
-    const scopes = ["public", ...(extraScopes ?? [])];
     const params = new URLSearchParams({
       client_id:     config.clientId,
       redirect_uri:  callbackUri(),
       response_type: "code",
-      scope:         scopes.join(" "),
+      scope:         buildScopeParam(currentScope, extraScopes),
     });
     window.location.href = `https://api.intra.42.fr/oauth/authorize?${params}`;
-  }, [config]);
+  }, [config, currentScope]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY_TOKEN);

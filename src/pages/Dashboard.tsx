@@ -51,7 +51,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
           </p>
         </div>
         {config?.clientId ? (
-          <button onClick={login} className="btn-primary px-6 py-3">
+          <button onClick={() => login()} className="btn-primary px-6 py-3">
             Login with 42 →
           </button>
         ) : (
