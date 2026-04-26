@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { useProject, useProjectUsers, useSubmitProject } from "../api/projects";
 import { useMyScaleTeams } from "../api/scale-teams";
-import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
+import { InsufficientScopeCard, ScopePrompt } from "../components/errors/InsufficientScopeCard";
 import { openOfficial } from "../lib/redirects";
 import type { ProjectUser } from "../types";
 
@@ -520,9 +520,10 @@ export function ProjectPage() {
               >
                 Evaluations
               </h2>
-              <p className="text-xs text-center py-2" style={{ color: "var(--color-faint)" }}>
-                Projects scope is needed to view evaluations.
-              </p>
+              <ScopePrompt
+                title="Projects Scope Needed"
+                message="Evaluations require the projects scope."
+              />
             </div>
           )}
 

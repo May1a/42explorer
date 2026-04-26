@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useMySlots, useCreateSlot, useDeleteSlot, useUpdateSlot } from "../api/slots";
 import { useAuth } from "../context/AuthContext";
-import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
+import { InsufficientScopeCard, ScopePrompt } from "../components/errors/InsufficientScopeCard";
 import type { Slot, MergedSlot } from "../types";
 
 const HOUR_HEIGHT = 64;
@@ -378,17 +378,10 @@ export function SlotsPage() {
 
       {/* Scope missing */}
       {!isLoading && !error && !hasScope("projects") && (
-        <div
-          className="rounded-xl border p-6 md:p-10 flex flex-col items-center justify-center gap-3 text-center"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-        >
-          <p className="text-sm" style={{ color: "var(--color-muted)" }}>
-            Projects scope is needed to access slots.
-          </p>
-          <p className="text-xs" style={{ color: "var(--color-faint)" }}>
-            Re-authorize with the <span style={{ color: "var(--color-primary)" }}>projects</span> scope in your settings.
-          </p>
-        </div>
+        <ScopePrompt
+          title="Projects Scope Needed"
+          message="Slots require the projects scope."
+        />
       )}
 
       {/* Content */}

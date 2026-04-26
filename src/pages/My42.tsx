@@ -5,7 +5,7 @@ import { useProjectUsers, useCursusProjects, useStartProject, useSubmitProject }
 import { useMyScaleTeams } from "../api/scale-teams";
 import { useMySlots, useCreateSlot } from "../api/slots";
 import { LevelBar } from "../components/LevelBar";
-import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
+import { InsufficientScopeCard, ScopePrompt } from "../components/errors/InsufficientScopeCard";
 import type { ProjectUser, Project, ScaleTeam, Slot } from "../types";
 import { openOfficial } from "../lib/redirects";
 import { useQueryClient } from "@tanstack/react-query";
@@ -296,7 +296,10 @@ export function My42Page() {
               <SectionHeader title="Available Projects" count={hasScope("projects") ? availableProjects.length : undefined} />
 
               {!hasScope("projects") ? (
-                <EmptyState text="Add the projects scope to see available projects. Projects scope is needed to view this section." />
+                <ScopePrompt
+                  title="Projects Scope Needed"
+                  message="Available projects require the projects scope."
+                />
               ) : cpError ? (
                 <InsufficientScopeCard error={cpError} />
               ) : availableProjects.length === 0 ? (
@@ -371,7 +374,10 @@ export function My42Page() {
               </div>
 
               {!hasScope("projects") ? (
-                <EmptyState text="Projects scope is needed to view slots." />
+                <ScopePrompt
+                  title="Projects Scope Needed"
+                  message="Slots require the projects scope."
+                />
               ) : slotsError ? (
                 <InsufficientScopeCard error={slotsError} />
               ) : upcomingSlots.length === 0 ? (
