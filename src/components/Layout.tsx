@@ -228,7 +228,7 @@ export function Layout({ children }: Props) {
             </>
           ) : (
             <button
-              onClick={config?.clientId ? login : () => { closeSidebar(); }}
+              onClick={config?.clientId ? () => login() : () => { closeSidebar(); }}
               className="w-full py-2 text-xs font-bold rounded-md transition-all btn-primary"
             >
               Login with 42
