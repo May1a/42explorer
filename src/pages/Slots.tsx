@@ -507,7 +507,7 @@ export function SlotsPage() {
             })}
           </div>
 
-          {/* Calendar grid — full height, scrolls with the page */}
+          {/* Calendar grid */}
           <div
             className="rounded-xl border overflow-hidden"
             style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
@@ -531,7 +531,8 @@ export function SlotsPage() {
               </span>
             </div>
 
-            {/* Time grid — no max-height, scrolls with page */}
+            {/* Scrollable time grid */}
+            <div style={{ overflowY: "auto", maxHeight: "calc(100dvh - 19rem)", WebkitOverflowScrolling: "touch" }}>
             <div className="flex" style={{ userSelect: "none" }}>
               {/* Time labels */}
               <div
@@ -738,6 +739,7 @@ export function SlotsPage() {
                   );
                 })}
               </div>
+            </div>
             </div>
           </div>
         </>
