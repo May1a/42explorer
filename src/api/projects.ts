@@ -14,8 +14,9 @@ export function useProject(id?: number) {
 }
 
 export function useCursusProjects(cursusId?: number, params?: Params, opts?: { staleTime?: number; enabled?: boolean }) {
-  return use42ApiQuery<Project[]>("/projects", {
-    "filter.cursus_id": cursusId,
+  const path = cursusId != null ? `/cursus/${cursusId}/projects` : "/projects";
+
+  return use42ApiQuery<Project[]>(path, {
     "page.size": 200,
     sort: "name",
     ...params,
@@ -72,6 +73,7 @@ export function useStartProject() {
     onSuccess: () => {
       setTimeout(() => {
         qc.invalidateQueries({ queryKey: ["42", "/me/projects_users"] });
+        qc.invalidateQueries({ queryKey: ["42", `/users/${user?.id}/projects_users`] });
         qc.invalidateQueries({ queryKey: ["42", "/projects"] });
       }, 300);
     },
@@ -79,7 +81,7 @@ export function useStartProject() {
 }
 
 export function useSubmitProject() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const qc = useQueryClient();
 
   return useMutation<ProjectUser, API42Error, { projectUserId: number }>({
@@ -92,6 +94,7 @@ export function useSubmitProject() {
     onSuccess: () => {
       setTimeout(() => {
         qc.invalidateQueries({ queryKey: ["42", "/me/projects_users"] });
+        qc.invalidateQueries({ queryKey: ["42", `/users/${user?.id}/projects_users`] });
       }, 300);
     },
   });
