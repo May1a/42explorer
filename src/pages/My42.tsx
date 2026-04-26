@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { useProjectUsers, useCursusProjects, useStartProject, useSubmitProject } from "../api/projects";
 import { useMyScaleTeams } from "../api/scale-teams";
@@ -8,46 +9,63 @@ import type { ProjectUser, Project, ScaleTeam, Slot } from "../types";
 import { openOfficial } from "../lib/redirects";
 import { useQueryClient } from "@tanstack/react-query";
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  finished:              { label: "Finished",              color: "var(--color-green)" },
-  in_progress:           { label: "In Progress",           color: "var(--color-primary)" },
-  searching_a_group:     { label: "Searching Group",       color: "var(--color-yellow)" },
-  creating_group:        { label: "Creating Group",        color: "var(--color-yellow)" },
-  waiting_for_correction:{ label: "Waiting Correction",    color: "var(--color-purple)" },
-  parent:                { label: "Parent Project",        color: "var(--color-muted)" },
+/* ── Constants ───────────────────────────────────────────────────────────── */
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  finished:               { label: "Finished",                color: "var(--color-green)" },
+  in_progress:            { label: "In Progress",             color: "var(--color-primary)" },
+  searching_a_group:      { label: "Searching Group",         color: "var(--color-yellow)" },
+  creating_group:         { label: "Creating Group",          color: "var(--color-yellow)" },
+  waiting_for_correction: { label: "Waiting Correction",      color: "var(--color-purple)" },
+  parent:                 { label: "Parent",                  color: "var(--color-faint)" },
 };
 
+/* ── Small Components ────────────────────────────────────────────────────── */
+
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_LABELS[status] ?? { label: status, color: "var(--color-faint)" };
+  const s = STATUS_META[status] ?? { label: status, color: "var(--color-faint)" };
   return (
     <span
-      className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
-      style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 12%, transparent)` }}
+      className="badge"
+      style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 10%, transparent)` }}
     >
       {s.label}
     </span>
   );
 }
 
-function StatPill({ label, value, color }: { label: string; value: string | number; color?: string }) {
+function SectionHeader({ title, count }: { title: string; count?: number }) {
   return (
-    <div className="flex items-center gap-2">
-      <span
-        className="text-sm md:text-base font-black"
-        style={{ color: color ?? "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+    <div className="flex items-center justify-between mb-4">
+      <h2
+        className="text-[11px] font-semibold uppercase tracking-[0.15em] accent-line pb-1"
+        style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
       >
-        {value}
-      </span>
-      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>
-        {label}
-      </span>
+        {title}
+      </h2>
+      {count != null && (
+        <span className="data-mono text-[10px]" style={{ color: "var(--color-faint)" }}>
+          {count}
+        </span>
+      )}
     </div>
   );
 }
 
+function EmptyState({ text }: { text: string }) {
+  return (
+    <p className="text-xs py-4 text-center" style={{ color: "var(--color-faint)" }}>
+      {text}
+    </p>
+  );
+}
+
+/* ── Main Page ───────────────────────────────────────────────────────────── */
+
 export function My42Page() {
   const { user, login, currentScope } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: myProjectsData, isLoading: mpLoading } = useProjectUsers(user?.id);
   const { data: cursusProjectsData, isLoading: cpLoading } = useCursusProjects(21);
@@ -73,9 +91,7 @@ export function My42Page() {
       p.status === "waiting_for_correction",
   );
 
-  const availableProjects = (cursusProjectsData?.data ?? []).filter(
-    (p) => !startedIds.has(p.id),
-  );
+  const availableProjects = (cursusProjectsData?.data ?? []).filter((p) => !startedIds.has(p.id));
 
   const myEvals = [
     ...(correctedData?.data ?? []).map((e) => ({ ...e, _kind: "as_corrected" as const })),
@@ -108,9 +124,7 @@ export function My42Page() {
         },
         onError: (err) => {
           if (err.isInsufficientScope) {
-            setActionError(
-              `"${projectName}" requires the projects scope. Your current scope is "${currentScope}".`,
-            );
+            setActionError(`"${projectName}" requires the projects scope.`);
           } else {
             setActionError(err.message);
           }
@@ -130,9 +144,7 @@ export function My42Page() {
         },
         onError: (err) => {
           if (err.isInsufficientScope) {
-            setActionError(
-              `Submitting "${pu.project.name}" requires the projects scope. Your current scope is "${currentScope}".`,
-            );
+            setActionError(`Submitting requires the projects scope.`);
           } else {
             setActionError(err.message);
           }
@@ -152,9 +164,7 @@ export function My42Page() {
         onSuccess: () => flash("Slot created"),
         onError: (err) => {
           if (err.isInsufficientScope) {
-            setActionError(
-              `Creating slots requires the projects scope. Your current scope is "${currentScope}".`,
-            );
+            setActionError(`Creating slots requires the projects scope.`);
           } else {
             setActionError(err.message);
           }
@@ -174,43 +184,42 @@ export function My42Page() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-3 flex-wrap animate-fade-in-up stagger-1">
         <h1
-          className="text-base md:text-lg font-bold tracking-widest uppercase"
-          style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}
+          className="text-xl md:text-2xl font-bold tracking-tight"
+          style={{ fontFamily: "var(--font-display)" }}
         >
-          &gt; MY_42_
+          My <span style={{ color: "var(--color-primary)" }}>42</span>
         </h1>
         <div className="flex items-center gap-3">
           {mainCursus && <LevelBar level={mainCursus.level} />}
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats Bar */}
       <div
-        className="rounded-xl border p-3 md:p-4 flex flex-wrap items-center gap-4 md:gap-6"
-        style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        className="section-card p-4 flex flex-wrap items-center gap-5 md:gap-8 animate-fade-in-up stagger-2"
       >
-        <StatPill label="Level" value={mainCursus?.level?.toFixed(2) ?? "?"} />
-        <StatPill label="Correction pts" value={user.correction_point} />
-        <StatPill label="Wallet" value={`₿ ${user.wallet.toLocaleString()}`} color="var(--color-yellow)" />
-        <StatPill
+        <StatItem label="Level" value={mainCursus?.level?.toFixed(2) ?? "?"} />
+        <StatItem label="Correction" value={String(user.correction_point)} />
+        <StatItem label="Wallet" value={`₿ ${user.wallet.toLocaleString()}`} color="var(--color-yellow)" />
+        <StatItem
           label="Projects"
           value={`${validatedProjects}/${totalFinished || myProjects.length}`}
           color="var(--color-green)"
         />
-        <StatPill label="Scope" value={currentScope} color="var(--color-muted)" />
+        <StatItem label="Scope" value={currentScope} color="var(--color-muted)" />
       </div>
 
-      {/* Success/Error banners */}
+      {/* Notifications */}
       {actionSuccess && (
         <div
-          className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs"
+          className="flex items-center justify-between gap-3 rounded-md border px-4 py-2.5 text-xs animate-fade-in-up"
           style={{
-            background: "color-mix(in srgb, var(--color-green) 10%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-green) 40%, transparent)",
+            background: "color-mix(in srgb, var(--color-green) 8%, var(--color-card))",
+            borderColor: "color-mix(in srgb, var(--color-green) 25%, transparent)",
             color: "var(--color-green)",
           }}
         >
@@ -220,10 +229,10 @@ export function My42Page() {
       )}
       {actionError && (
         <div
-          className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-xs"
+          className="flex items-start justify-between gap-3 rounded-md border px-4 py-2.5 text-xs animate-fade-in-up"
           style={{
-            background: "color-mix(in srgb, var(--color-red) 10%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-red) 40%, transparent)",
+            background: "color-mix(in srgb, var(--color-red) 8%, var(--color-card))",
+            borderColor: "color-mix(in srgb, var(--color-red) 25%, transparent)",
             color: "var(--color-red)",
           }}
         >
@@ -244,33 +253,23 @@ export function My42Page() {
       )}
 
       {isLoading && (
-        <div className="space-y-3">
+        <div className="space-y-4 animate-fade-in">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton h-24 w-full rounded-xl" />
+            <div key={i} className="skeleton h-28 w-full rounded-lg" />
           ))}
         </div>
       )}
 
       {!isLoading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
           {/* ── Left column ── */}
-          <div className="space-y-4 md:space-y-5">
+          <div className="space-y-5">
             {/* Current Projects */}
-            <section
-              className="rounded-xl border p-4 md:p-5"
-              style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-            >
-              <h2
-                className="text-[11px] font-extrabold uppercase tracking-widest mb-4"
-                style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
-              >
-                Current Project{currentProjects.length !== 1 ? "s" : ""}
-              </h2>
+            <section className="section-card p-5 animate-fade-in-up stagger-3">
+              <SectionHeader title={`Current Project${currentProjects.length !== 1 ? "s" : ""}`} count={currentProjects.length} />
 
               {currentProjects.length === 0 ? (
-                <p className="text-xs py-3" style={{ color: "var(--color-faint)" }}>
-                  No active projects. Start one below.
-                </p>
+                <EmptyState text="No active projects. Start one below." />
               ) : (
                 <div className="space-y-2">
                   {currentProjects.map((pu) => (
@@ -279,6 +278,7 @@ export function My42Page() {
                       pu={pu}
                       isSubmitting={submitProject.isPending}
                       onSubmit={() => handleSubmit(pu)}
+                      onNavigate={() => navigate({ to: "/project/$id", params: { id: String(pu.project.id) } })}
                     />
                   ))}
                 </div>
@@ -286,28 +286,13 @@ export function My42Page() {
             </section>
 
             {/* Available Projects */}
-            <section
-              className="rounded-xl border p-4 md:p-5"
-              style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2
-                  className="text-[11px] font-extrabold uppercase tracking-widest"
-                  style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
-                >
-                  Available Projects
-                </h2>
-                <span className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
-                  {availableProjects.length} available
-                </span>
-              </div>
+            <section className="section-card p-5 animate-fade-in-up stagger-4">
+              <SectionHeader title="Available Projects" count={availableProjects.length} />
 
               {availableProjects.length === 0 ? (
-                <p className="text-xs py-3" style={{ color: "var(--color-faint)" }}>
-                  No available projects found for your cursus.
-                </p>
+                <EmptyState text="No available projects found for your cursus." />
               ) : (
-                <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
+                <div className="space-y-1 max-h-[480px] overflow-y-auto pr-1">
                   {availableProjects.slice(0, 40).map((proj) => (
                     <AvailableProjectRow
                       key={proj.id}
@@ -318,7 +303,7 @@ export function My42Page() {
                   ))}
                   {availableProjects.length > 40 && (
                     <p className="text-xs text-center py-2" style={{ color: "var(--color-faint)" }}>
-                      + {availableProjects.length - 40} more projects
+                      + {availableProjects.length - 40} more
                     </p>
                   )}
                 </div>
@@ -327,36 +312,21 @@ export function My42Page() {
           </div>
 
           {/* ── Right column ── */}
-          <div className="space-y-4 md:space-y-5">
+          <div className="space-y-5">
             {/* Evaluations */}
-            <section
-              className="rounded-xl border p-4 md:p-5"
-              style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2
-                  className="text-[11px] font-extrabold uppercase tracking-widest"
-                  style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
-                >
-                  Evaluations
-                </h2>
-                <span className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
-                  {myEvals.length} total
-                </span>
-              </div>
+            <section className="section-card p-5 animate-fade-in-up stagger-3">
+              <SectionHeader title="Evaluations" count={myEvals.length} />
 
               {myEvals.length === 0 ? (
-                <p className="text-xs py-3" style={{ color: "var(--color-faint)" }}>
-                  No evaluations yet.
-                </p>
+                <EmptyState text="No evaluations yet." />
               ) : (
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
                   {myEvals.slice(0, 10).map((ev) => (
                     <EvalMiniCard key={ev.id} eval={ev} />
                   ))}
                   {myEvals.length > 10 && (
                     <p className="text-xs text-center py-2" style={{ color: "var(--color-faint)" }}>
-                      + {myEvals.length - 10} more evaluations
+                      + {myEvals.length - 10} more
                     </p>
                   )}
                 </div>
@@ -364,35 +334,26 @@ export function My42Page() {
             </section>
 
             {/* Slots */}
-            <section
-              className="rounded-xl border p-4 md:p-5"
-              style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-            >
+            <section className="section-card p-5 animate-fade-in-up stagger-4">
               <div className="flex items-center justify-between mb-4">
                 <h2
-                  className="text-[11px] font-extrabold uppercase tracking-widest"
-                  style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+                  className="text-[11px] font-semibold uppercase tracking-[0.15em] accent-line pb-1"
+                  style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
                 >
                   My Slots
                 </h2>
                 <button
                   onClick={handleQuickSlot}
                   disabled={createSlot.isPending}
-                  className="text-[10px] font-bold px-2 py-1 rounded-lg transition-all"
-                  style={{
-                    background: "var(--color-primary)",
-                    color: "#000",
-                    opacity: createSlot.isPending ? 0.6 : 1,
-                  }}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
+                  style={{ background: "var(--color-primary)", color: "#000" }}
                 >
-                  {createSlot.isPending ? "..." : "+1h Now"}
+                  {createSlot.isPending ? "..." : "+1h"}
                 </button>
               </div>
 
               {upcomingSlots.length === 0 ? (
-                <p className="text-xs py-3" style={{ color: "var(--color-faint)" }}>
-                  No upcoming slots. Click "+1h Now" to open a slot.
-                </p>
+                <EmptyState text="No upcoming slots. Click +1h to open a slot." />
               ) : (
                 <div className="space-y-1.5">
                   {upcomingSlots.map((slot) => (
@@ -403,7 +364,7 @@ export function My42Page() {
 
               <a
                 href="/slots"
-                className="inline-block mt-3 text-[10px] font-semibold transition-colors"
+                className="inline-block mt-4 text-[10px] font-semibold transition-colors hover:text-[#e2e8f0]"
                 style={{ color: "var(--color-muted)" }}
                 onClick={(e) => {
                   e.preventDefault();
@@ -420,31 +381,49 @@ export function My42Page() {
   );
 }
 
-/* ── Sub-components ───────────────────────────────────────────────────── */
+/* ── Sub-components ──────────────────────────────────────────────────────── */
+
+function StatItem({ label, value, color }: { label: string; value: string | number; color?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="text-base md:text-lg font-black"
+        style={{ color: color ?? "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </span>
+      <span className="text-[10px] uppercase tracking-widest font-medium" style={{ color: "var(--color-faint)" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
 function CurrentProjectCard({
   pu,
   isSubmitting,
   onSubmit,
+  onNavigate,
 }: {
   pu: ProjectUser;
   isSubmitting: boolean;
   onSubmit: () => void;
+  onNavigate: () => void;
 }) {
   return (
     <div
-      className="rounded-lg border p-3"
+      className="rounded-md border p-3.5 card-hover cursor-pointer group"
       style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}
+      onClick={onNavigate}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
             <StatusBadge status={pu.status} />
             {pu.final_mark != null && (
               <span
-                className="text-xs font-black"
+                className="data-mono text-xs font-bold"
                 style={{
-                  fontFamily: "var(--font-mono)",
                   color: pu["validated?"] ? "var(--color-green)" : "var(--color-red)",
                 }}
               >
@@ -452,17 +431,22 @@ function CurrentProjectCard({
               </span>
             )}
           </div>
-          <div className="text-sm font-semibold text-[#e2e8f0] truncate">{pu.project.name}</div>
-          <div className="text-[10px] mt-0.5" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
-            slug: {pu.project.slug} · attempt #{pu.occurrence}
+          <div className="text-sm font-semibold text-[#e2e8f0] truncate group-hover:text-[var(--color-primary)] transition-colors">
+            {pu.project.name}
+          </div>
+          <div className="text-[10px] mt-1 data-mono" style={{ color: "var(--color-faint)" }}>
+            {pu.project.slug} · attempt #{pu.occurrence}
             {pu.current_team_id ? ` · team #${pu.current_team_id}` : ""}
           </div>
         </div>
 
         <button
-          onClick={onSubmit}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSubmit();
+          }}
           disabled={isSubmitting || pu.status === "finished" || pu.status === "parent"}
-          className="shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-default hover:brightness-110 active:scale-95"
+          className="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-sm transition-all disabled:opacity-30 disabled:cursor-default hover:brightness-110 active:scale-95"
           style={{
             background: pu.status === "waiting_for_correction"
               ? "var(--color-purple)"
@@ -488,25 +472,25 @@ function AvailableProjectRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg group transition-colors"
+      className="flex items-center justify-between gap-2 px-3 py-2 rounded-md group transition-colors"
       style={{ background: "var(--color-card-hi)" }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "color-mix(in srgb, var(--color-primary) 6%, var(--color-card-hi))";
+        (e.currentTarget as HTMLElement).style.background = "var(--color-card-hover)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.background = "var(--color-card-hi)";
       }}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-semibold text-[#e2e8f0] truncate">{project.name}</div>
-        <div className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+        <div className="text-xs font-medium text-[#e2e8f0] truncate">{project.name}</div>
+        <div className="text-[10px] data-mono" style={{ color: "var(--color-faint)" }}>
           {project.slug}
         </div>
       </div>
       <button
         onClick={onStart}
         disabled={isStarting}
-        className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
+        className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
         style={{ background: "var(--color-primary)", color: "#000" }}
       >
         {isStarting ? "..." : "Start"}
@@ -521,29 +505,29 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
 
   return (
     <div
-      className="rounded-lg border p-2.5"
+      className="rounded-md border p-2.5 card-hover"
       style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap mb-1">
             <span
-              className="text-[9px] font-bold uppercase px-1 py-0.5 rounded"
+              className="badge"
               style={{
                 color: filled ? "var(--color-green)" : "var(--color-yellow)",
-                background: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 12%, transparent)`,
+                background: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 10%, transparent)`,
               }}
             >
               {filled ? "Done" : "Pending"}
             </span>
             <span
-              className="text-[9px] font-bold uppercase px-1 py-0.5 rounded"
+              className="badge"
               style={{ color: "var(--color-faint)", background: "var(--color-card)" }}
             >
               {ev._kind === "as_corrected" ? "My eval" : "I evaluate"}
             </span>
           </div>
-          <div className="text-xs font-semibold text-[#e2e8f0] truncate">
+          <div className="text-xs font-medium text-[#e2e8f0] truncate">
             {ev.scale?.name ?? `Scale #${ev.scale_id}`}
           </div>
           <div className="text-[10px] mt-0.5" style={{ color: "var(--color-faint)" }}>
@@ -553,9 +537,8 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
         <div className="text-right shrink-0">
           {mark != null && (
             <div
-              className="text-sm font-black"
+              className="data-mono text-sm font-black"
               style={{
-                fontFamily: "var(--font-mono)",
                 color: mark >= 50 ? "var(--color-green)" : "var(--color-red)",
               }}
             >
@@ -564,7 +547,7 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
           )}
           <button
             onClick={() => openOfficial("unverified_workflow", "https://profile.42.fr/")}
-            className="text-[9px] font-semibold mt-1 transition-colors"
+            className="text-[9px] font-medium mt-1 transition-colors hover:text-[#e2e8f0]"
             style={{ color: "var(--color-muted)" }}
           >
             Open 42 ↗
@@ -582,20 +565,20 @@ function SlotMiniRow({ slot }: { slot: Slot }) {
 
   return (
     <div
-      className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg"
+      className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-md"
       style={{ background: "var(--color-card-hi)" }}
     >
       <div className="flex items-center gap-2 min-w-0">
         <span
-          className="w-1.5 h-1.5 rounded-full shrink-0"
+          className="status-dot"
           style={{ background: scaleName ? "var(--color-purple)" : "var(--color-green)" }}
         />
-        <span className="text-xs font-mono truncate" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+        <span className="text-xs truncate data-mono" style={{ color: "#e2e8f0" }}>
           {begin.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+        <span className="text-[10px] data-mono" style={{ color: "var(--color-faint)" }}>
           {begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}–
           {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>

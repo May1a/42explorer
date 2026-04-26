@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg:        #07070b;
-  --color-surface:   #0c0c14;
-  --color-card:      #12121c;
-  --color-card-hi:   #181826;
-  --color-border:    #1e1e2e;
-  --color-border-hi: #2a2a40;
+  --color-bg:        #06060a;
+  --color-surface:   #0a0a10;
+  --color-card:      #0f0f16;
+  --color-card-hi:   #14141e;
+  --color-card-hover:#1a1a26;
+  --color-border:    #1c1c28;
+  --color-border-hi: #262636;
   --color-primary:   #00d4e0;
   --color-primary-d: #00a8b3;
-  --color-purple:    #8b5cf6;
-  --color-green:     #34d399;
-  --color-yellow:    #fbbf24;
-  --color-red:       #f87171;
-  --color-muted:     #94a3b8;
-  --color-faint:     #64748b;
-  --font-sans: 'Sora', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --color-primary-glow: rgba(0, 212, 224, 0.15);
+  --color-purple:    #9d6eff;
+  --color-green:     #3ee8a0;
+  --color-yellow:    #f5c542;
+  --color-red:       #ff6b6b;
+  --color-muted:     #8b8fa3;
+  --color-faint:     #5a5e72;
+  --font-sans:  'Outfit', system-ui, -apple-system, sans-serif;
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 }
 
 @layer base {
@@ -35,23 +38,36 @@
     @apply flex overflow-hidden;
   }
 
+  /* Noise texture overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+  }
+
   /* Scrollbar */
-  ::-webkit-scrollbar       { width: 5px; height: 5px; }
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--color-border-hi); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-faint); }
 
   /* Inputs / selects */
   input:not([type=range]),
   select,
   textarea {
-    @apply bg-card border border-border rounded-lg px-3 py-2 text-sm outline-none
-           transition-colors;
+    @apply bg-card border border-border rounded-md px-3 py-2 text-sm outline-none transition-colors;
     color: #e2e8f0;
   }
   input:not([type=range]):focus,
   select:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
   select option { background: var(--color-card); }
 
@@ -61,23 +77,25 @@
     box-shadow: none;
   }
   input[type=range]::-webkit-slider-runnable-track {
-    @apply h-1 rounded-full;
+    @apply h-[3px] rounded-full;
     background: var(--color-border-hi);
   }
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    @apply w-4 h-4 rounded-full border-2;
+    @apply w-3.5 h-3.5 rounded-sm border-2;
     background: var(--color-primary);
     border-color: var(--color-bg);
-    margin-top: -6px;
-    box-shadow: 0 0 0 2px var(--color-primary);
+    margin-top: -5px;
+    box-shadow: 0 0 0 1px var(--color-primary);
   }
 
   /* Table base */
   th {
-    @apply text-xs tracking-wider uppercase py-3 px-4 text-left font-semibold;
-    color: var(--color-muted);
+    @apply text-[11px] tracking-widest uppercase py-3 px-4 text-left font-semibold;
+    color: var(--color-faint);
     border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-weight: 500;
   }
   td {
     @apply py-3 px-4 text-sm;
@@ -101,14 +119,8 @@
 
 /* ── Animations ── */
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in {
@@ -117,35 +129,29 @@
 }
 
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes progress-shine {
+@keyframes shimmer {
   from { background-position: 200% 0; }
   to   { background-position: -200% 0; }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 0.8; }
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.7; }
+}
+
+@keyframes border-shimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-fade-in-up {
@@ -153,7 +159,7 @@
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
+  animation: fade-in 0.35s ease-out forwards;
 }
 
 .animate-scale-in {
@@ -165,30 +171,28 @@
 }
 
 /* Stagger delays */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.10s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.20s; }
-.stagger-5 { animation-delay: 0.25s; }
-.stagger-6 { animation-delay: 0.30s; }
+.stagger-1 { animation-delay: 0.04s; opacity: 0; }
+.stagger-2 { animation-delay: 0.08s; opacity: 0; }
+.stagger-3 { animation-delay: 0.12s; opacity: 0; }
+.stagger-4 { animation-delay: 0.16s; opacity: 0; }
+.stagger-5 { animation-delay: 0.20s; opacity: 0; }
+.stagger-6 { animation-delay: 0.24s; opacity: 0; }
+.stagger-7 { animation-delay: 0.28s; opacity: 0; }
+.stagger-8 { animation-delay: 0.32s; opacity: 0; }
 
-/* Online pulse animation */
+/* Online pulse */
 @keyframes pulse-green {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 60%, transparent); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 50%, transparent); }
   70%  { box-shadow: 0 0 0 6px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 .online-pulse {
-  animation: pulse-green 2s infinite;
-  @apply w-2.5 h-2.5 rounded-full;
+  animation: pulse-green 2.2s infinite;
+  @apply w-2 h-2 rounded-sm;
   background: var(--color-green);
 }
 
-/* Shimmer skeleton */
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to   { background-position: -200% 0; }
-}
+/* Skeleton */
 .skeleton {
   @apply rounded-md;
   background: linear-gradient(90deg, var(--color-card) 25%, var(--color-card-hi) 50%, var(--color-card) 75%);
@@ -197,28 +201,31 @@
 }
 
 /* Radar chart */
-.radar-polygon { fill: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+.radar-polygon { fill: color-mix(in srgb, var(--color-primary) 12%, transparent); }
 .radar-polygon-stroke { stroke: var(--color-primary); }
 
-/* Glass card utility */
+/* Glass card */
 .glass-card {
-  background: color-mix(in srgb, var(--color-card) 80%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--color-card) 85%, transparent);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
 }
 
 /* Glow utilities */
 .glow-primary {
-  box-shadow: 0 0 30px -8px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .glow-green {
-  box-shadow: 0 0 30px -8px color-mix(in srgb, var(--color-green) 30%, transparent);
+  box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-green) 25%, transparent);
 }
 .glow-yellow {
-  box-shadow: 0 0 30px -8px color-mix(in srgb, var(--color-yellow) 30%, transparent);
+  box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-yellow) 25%, transparent);
 }
 .glow-purple {
-  box-shadow: 0 0 30px -8px color-mix(in srgb, var(--color-purple) 30%, transparent);
+  box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-purple) 25%, transparent);
+}
+.glow-red {
+  box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-red) 25%, transparent);
 }
 
 /* Gradient text */
@@ -229,7 +236,85 @@
   background-clip: text;
 }
 
-/* Subtle border gradient */
+/* Accent line */
+.accent-line {
+  position: relative;
+}
+.accent-line::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 24px;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 1px;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px -12px rgba(0,0,0,0.5);
+}
+
+/* Section card base */
+.section-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+/* Inline code / data style */
+.data-mono {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  letter-spacing: -0.02em;
+}
+
+/* Status dot */
+.status-dot {
+  @apply w-1.5 h-1.5 rounded-full shrink-0;
+}
+.status-dot-sm {
+  @apply w-1 h-1 rounded-full shrink-0;
+}
+
+/* Badge base */
+.badge {
+  @apply inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm;
+}
+
+/* Button base */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-all;
+  background: var(--color-primary);
+  color: #000;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all border;
+  background: transparent;
+  border-color: var(--color-border-hi);
+  color: var(--color-muted);
+}
+.btn-secondary:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+/* Border gradient */
 .border-gradient {
   position: relative;
 }

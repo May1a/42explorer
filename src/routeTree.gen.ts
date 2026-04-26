@@ -21,6 +21,7 @@ import { Route as EvaluationsRouteImport } from './routes/evaluations'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthErrorRouteImport } from './routes/auth-error'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectIdRouteImport } from './routes/project.$id'
 import { Route as ProfileLoginRouteImport } from './routes/profile.$login'
 
 const StudentsRoute = StudentsRouteImport.update({
@@ -83,6 +84,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectIdRoute = ProjectIdRouteImport.update({
+  id: '/project/$id',
+  path: '/project/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileLoginRoute = ProfileLoginRouteImport.update({
   id: '/profile/$login',
   path: '/profile/$login',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
+  '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
+  '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/slots': typeof SlotsRoute
   '/students': typeof StudentsRoute
   '/profile/$login': typeof ProfileLoginRoute
+  '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/slots'
     | '/students'
     | '/profile/$login'
+    | '/project/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/slots'
     | '/students'
     | '/profile/$login'
+    | '/project/$id'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/slots'
     | '/students'
     | '/profile/$login'
+    | '/project/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   SlotsRoute: typeof SlotsRoute
   StudentsRoute: typeof StudentsRoute
   ProfileLoginRoute: typeof ProfileLoginRoute
+  ProjectIdRoute: typeof ProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/project/$id': {
+      id: '/project/$id'
+      path: '/project/$id'
+      fullPath: '/project/$id'
+      preLoaderRoute: typeof ProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/$login': {
       id: '/profile/$login'
       path: '/profile/$login'
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   SlotsRoute: SlotsRoute,
   StudentsRoute: StudentsRoute,
   ProfileLoginRoute: ProfileLoginRoute,
+  ProjectIdRoute: ProjectIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

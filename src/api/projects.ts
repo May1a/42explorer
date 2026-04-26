@@ -9,6 +9,10 @@ export function useProjects(params?: Params) {
   return use42ApiQuery<Project[]>("/projects", params, { staleTime: 3600_000 });
 }
 
+export function useProject(id?: number) {
+  return use42ApiQuery<Project>(id != null ? `/projects/${id}` : null, undefined, { staleTime: 3600_000 });
+}
+
 export function useCursusProjects(cursusId?: number, params?: Params) {
   return use42ApiQuery<Project[]>("/projects", {
     "filter.cursus_id": cursusId,
