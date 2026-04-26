@@ -6,6 +6,8 @@ import type { Slot, MergedSlot } from "../types";
 
 const HOUR_HEIGHT = 64;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MIN_SLOT_LEAD_MINUTES = 30;
+const SNAP_MINUTES = 15;
 
 // 42 API returns slots as consecutive 15-min chunks — merge them into one block
 function mergeSlots(slots: Slot[]): MergedSlot[] {
@@ -55,6 +57,21 @@ function minToISO(date: Date, totalMin: number): string {
   return d.toISOString();
 }
 
+function dateAtMin(date: Date, totalMin: number): Date {
+  const d = new Date(date);
+  d.setHours(Math.floor(totalMin / 60), totalMin % 60, 0, 0);
+  return d;
+}
+
+function minOpenMinForDate(date: Date, now: Date): number {
+  if (!sameDay(date, now)) return 0;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return Math.min(
+    24 * 60,
+    Math.ceil((nowMin + MIN_SLOT_LEAD_MINUTES) / SNAP_MINUTES) * SNAP_MINUTES,
+  );
+}
+
 function formatMinLabel(totalMin: number): string {
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
@@ -80,6 +97,7 @@ export function SlotsPage() {
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
+  const [now, setNow] = useState(() => new Date());
 
   const { hasScope } = useAuth();
 
@@ -103,6 +121,8 @@ export function SlotsPage() {
   const dragStateRef = useRef<DragState | null>(null);
   const activeDateRef = useRef(activeDate);
   activeDateRef.current = activeDate;
+  const nowRef = useRef(now);
+  nowRef.current = now;
 
   const { data, isLoading, error } = useMySlots({ "page.size": 200 }, { enabled: hasScope("projects") });
   const create = useCreateSlot();
@@ -114,6 +134,10 @@ export function SlotsPage() {
   updateRef.current = update;
 
   const allSlots = data?.data ?? [];
+  const minOpenMin = useMemo(() => minOpenMinForDate(activeDate, now), [activeDate, now]);
+  const minOpenMinRef = useRef(minOpenMin);
+  minOpenMinRef.current = minOpenMin;
+  const invalidAreaHeight = Math.min(Math.round((minOpenMin / 60) * HOUR_HEIGHT), 24 * HOUR_HEIGHT);
 
   const upcomingDays = useMemo(() => {
     const days: Date[] = [];
@@ -144,6 +168,11 @@ export function SlotsPage() {
     }
   }, [activeDate]);
 
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // Cancel drag on day change
   useEffect(() => {
     isDragging.current = false;
@@ -157,7 +186,19 @@ export function SlotsPage() {
     const rect = dayColumnRef.current.getBoundingClientRect();
     const relY = Math.max(0, clientY - rect.top);
     const totalMin = (relY / HOUR_HEIGHT) * 60;
-    return Math.min(Math.round(totalMin / 15) * 15, 23 * 60 + 45);
+    return Math.min(Math.round(totalMin / SNAP_MINUTES) * SNAP_MINUTES, 23 * 60 + 45);
+  }
+
+  function rangeStartsSoon(startMin: number): boolean {
+    return sameDay(activeDateRef.current, nowRef.current) && startMin < minOpenMinRef.current;
+  }
+
+  function validRangeForActiveDate(startMin: number, endMin: number): boolean {
+    return startMin >= minOpenMinRef.current && endMin > startMin;
+  }
+
+  function showTooSoonError() {
+    setCreateError("Slots must start at least 30 minutes from now.");
   }
 
   function handleResizeStart(e: React.MouseEvent, slot: MergedSlot, edge: "top" | "bottom") {
@@ -189,6 +230,10 @@ export function SlotsPage() {
     if ((e.target as Element).closest("[data-slot]")) return;
     e.preventDefault();
     const startMin = yToSnappedMin(e.clientY);
+    if (rangeStartsSoon(startMin)) {
+      showTooSoonError();
+      return;
+    }
     const initial: DragState = { startMin, endMin: startMin + 15 };
     dragStateRef.current = initial;
     setDragDisplay(initial);
@@ -197,8 +242,13 @@ export function SlotsPage() {
 
   function handleDayTouchStart(e: React.TouchEvent) {
     if ((e.target as Element).closest("[data-slot]")) return;
+    if (!(e.target as Element).closest("[data-touch-create-lane]")) return;
     e.preventDefault();
     const startMin = yToSnappedMin(e.touches[0].clientY);
+    if (rangeStartsSoon(startMin)) {
+      showTooSoonError();
+      return;
+    }
     const initial: DragState = { startMin, endMin: startMin + 15 };
     dragStateRef.current = initial;
     setDragDisplay(initial);
@@ -216,10 +266,11 @@ export function SlotsPage() {
         const end = new Date(slot.end_at);
         const beginMin = begin.getHours() * 60 + begin.getMinutes();
         const endMin = end.getHours() * 60 + end.getMinutes();
+        const minOpenMin = minOpenMinForDate(begin, nowRef.current);
         let top: number, height: number;
 
         if (edge === "top") {
-          const newBeginMin = Math.min(Math.max(curMin, 0), endMin - 15);
+          const newBeginMin = Math.min(Math.max(curMin, minOpenMin), endMin - 15);
           top = Math.round((newBeginMin / 60) * HOUR_HEIGHT);
           const bottom = Math.round((endMin / 60) * HOUR_HEIGHT);
           height = Math.max(bottom - top, 20);
@@ -236,7 +287,7 @@ export function SlotsPage() {
       if (!isDragging.current || !dragStateRef.current) return;
       const next: DragState = {
         startMin: dragStateRef.current.startMin,
-        endMin: Math.max(curMin, dragStateRef.current.startMin + 15),
+        endMin: Math.min(Math.max(curMin, dragStateRef.current.startMin + 15), 24 * 60),
       };
       dragStateRef.current = next;
       setDragDisplay(next);
@@ -247,6 +298,7 @@ export function SlotsPage() {
     }
 
     function onTouchMove(e: TouchEvent) {
+      if (!isDragging.current && !isResizing.current) return;
       e.preventDefault();
       handleMove(e.touches[0].clientY);
     }
@@ -267,22 +319,27 @@ export function SlotsPage() {
 
           if (edge === "top") {
             const newBeginMin = Math.round((ghost.top / HOUR_HEIGHT) * 60);
-            newBegin = new Date(begin);
-            newBegin.setHours(Math.floor(newBeginMin / 60), newBeginMin % 60, 0, 0);
+            newBegin = dateAtMin(begin, newBeginMin);
             newEnd = new Date(end);
           } else {
             const newEndPx = ghost.top + ghost.height;
             const newEndMin = Math.round((newEndPx / HOUR_HEIGHT) * 60);
             newBegin = new Date(begin);
-            newEnd = new Date(end);
-            newEnd.setHours(Math.floor(newEndMin / 60), newEndMin % 60, 0, 0);
+            newEnd = dateAtMin(end, newEndMin);
           }
 
-          updateRef.current.mutate({
-            slotIds: slot.slotIds,
-            begin_at: newBegin.toISOString(),
-            end_at: newEnd.toISOString(),
-          });
+          const newBeginMin = newBegin.getHours() * 60 + newBegin.getMinutes();
+          const newEndMin = newEnd.getHours() * 60 + newEnd.getMinutes();
+          const minOpenMin = minOpenMinForDate(newBegin, nowRef.current);
+          if (newBeginMin < minOpenMin || newEndMin <= newBeginMin) {
+            showTooSoonError();
+          } else {
+            updateRef.current.mutate({
+              slotIds: slot.slotIds,
+              begin_at: newBegin.toISOString(),
+              end_at: newEnd.toISOString(),
+            });
+          }
         }
         return;
       }
@@ -293,6 +350,10 @@ export function SlotsPage() {
       dragStateRef.current = null;
       setDragDisplay(null);
       if (drag) {
+        if (!validRangeForActiveDate(drag.startMin, drag.endMin)) {
+          showTooSoonError();
+          return;
+        }
         setCreateError(null);
         createRef.current.mutate(
           {
@@ -311,11 +372,13 @@ export function SlotsPage() {
     window.addEventListener("mouseup", onUp);
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("touchend", onUp);
+    window.addEventListener("touchcancel", onUp);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onUp);
+      window.removeEventListener("touchcancel", onUp);
     };
   }, []);
 
@@ -564,7 +627,7 @@ export function SlotsPage() {
                     height: `${24 * HOUR_HEIGHT}px`,
                     borderColor: "var(--color-border)",
                     cursor: dragDisplay ? "ns-resize" : "crosshair",
-                    touchAction: "none",
+                    touchAction: "pan-y",
                   }}
                 onMouseDown={handleDayMouseDown}
                 onTouchStart={handleDayTouchStart}
@@ -590,6 +653,36 @@ export function SlotsPage() {
                     />
                   </div>
                 ))}
+
+                {/* Disabled lead-time area */}
+                {invalidAreaHeight > 0 && (
+                  <div
+                    className="absolute left-0 right-0 top-0 z-[1] border-b"
+                    style={{
+                      height: invalidAreaHeight,
+                      background:
+                        "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--color-faint) 18%, transparent), color-mix(in srgb, var(--color-faint) 18%, transparent) 8px, color-mix(in srgb, var(--color-faint) 10%, transparent) 8px, color-mix(in srgb, var(--color-faint) 10%, transparent) 16px)",
+                      borderColor: "color-mix(in srgb, var(--color-faint) 35%, transparent)",
+                      touchAction: "pan-y",
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    title="Slots must start at least 30 minutes from now"
+                  />
+                )}
+
+                {/* Touch create lane; the rest of the column remains safe for vertical scrolling. */}
+                <div
+                  data-touch-create-lane="true"
+                  className="absolute right-0 bottom-0 z-[2] w-9 md:hidden"
+                  style={{
+                    top: invalidAreaHeight,
+                    touchAction: "none",
+                    borderLeft: "1px dotted color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                    background:
+                      "linear-gradient(to left, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent)",
+                  }}
+                />
 
                 {/* Current time indicator */}
                 {isToday && (
