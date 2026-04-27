@@ -13,16 +13,19 @@ export interface API42Result<T> {
  *  "filter.campus_id" → "filter[campus_id]"
  *  "page.number"      → "page[number]"
  */
-function toSearchParams(params?: Params): URLSearchParams {
-  const sp = new URLSearchParams();
-  if (!params) return sp;
+function toSearchParams(params?: Params): string {
+  if (!params) return "";
+  const parts: string[] = [];
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
     const dot = k.indexOf(".");
     const key = dot !== -1 ? `${k.slice(0, dot)}[${k.slice(dot + 1)}]` : k;
-    sp.set(key, String(v));
+    const encodedKey = encodeURIComponent(key);
+    const raw = encodeURIComponent(String(v));
+    const encodedValue = raw.replace(/%2C/g, ",");
+    parts.push(`${encodedKey}=${encodedValue}`);
   }
-  return sp;
+  return parts.join("&");
 }
 
 export async function fetch42<T>(
@@ -30,11 +33,11 @@ export async function fetch42<T>(
   params: Params | undefined,
   token: string
 ): Promise<API42Result<T>> {
-  const url = new URL("/api/42", window.location.origin);
-  url.searchParams.set("path", path);
-  toSearchParams(params).forEach((v, k) => url.searchParams.set(k, v));
+  const sp = toSearchParams(params);
+  const qs = `path=${encodeURIComponent(path)}${sp ? "&" + sp : ""}`;
+  const url = `${window.location.origin}/api/42?${qs}`;
 
-  const res = await fetch(url.toString(), {
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 

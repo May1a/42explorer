@@ -67,7 +67,13 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   const apiUrl = new URL(`https://api.intra.42.fr/v2${path}`);
-  url.searchParams.forEach((value, key) => apiUrl.searchParams.set(key, value));
+  const parts: string[] = [];
+  url.searchParams.forEach((value, key) => {
+    const ek = encodeURIComponent(key);
+    const ev = encodeURIComponent(value).replace(/%2C/g, ",");
+    parts.push(`${ek}=${ev}`);
+  });
+  if (parts.length) apiUrl.search = `?${parts.join("&")}`;
 
   if (!auth || auth === "anonymous") {
     return Response.json({ error: "Missing Authorization header" }, { status: 401 });
