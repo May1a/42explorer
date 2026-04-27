@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { use42Query } from "../hooks/use42API";
 import { LevelBar } from "../components/LevelBar";
@@ -26,6 +27,8 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   const { user, login } = useAuth();
 
   const campusId = user?.campus_users?.find(c => c.is_primary)?.campus_id;
+  const nowIso = useMemo(() => new Date().toISOString(), []);
+
   const { data: locRes, isLoading: locLoading } = use42Query<Location[]>(
     campusId ? `/campus/${campusId}/locations` : null,
     { "filter.active": true, "page.size": 100 }
@@ -33,11 +36,16 @@ export function DashboardPage({ onNavigate }: { onNavigate: (page: any, extra?: 
 
   const { data: eventsRes } = use42Query<any[]>(
     campusId ? `/campus/${campusId}/events` : null,
-    { "page.size": 5, sort: "begin_at" }
+    { "page.size": 5, sort: "begin_at", "range.begin_at": `${nowIso},` }
   );
 
   const locations = locRes?.data;
-  const events    = eventsRes?.data;
+  const now = new Date();
+  const rawEvents = eventsRes?.data ?? [];
+  const events = rawEvents.filter(e =>
+    new Date(e.begin_at) > now &&
+    Boolean(campusId && e.campus_ids?.includes(campusId))
+  );
 
   if (!user) {
     return (
