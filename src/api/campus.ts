@@ -10,6 +10,6 @@ export function useCampusLocations(campusId: number, params?: Params) {
   return use42ApiQuery<Location[]>(`/campus/${campusId}/locations`, params);
 }
 
-export function useCampusEvents(campusId: number, params?: Params) {
-  return use42ApiQuery<Event[]>(`/campus/${campusId}/events`, params);
+export function useCampusEvents(campusId: number | null | undefined, params?: Params) {
+  return use42ApiQuery<Event[]>(campusId ? `/campus/${campusId}/events` : null, params);
 }

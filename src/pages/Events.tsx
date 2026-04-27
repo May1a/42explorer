@@ -1,14 +1,27 @@
-import { useEvents } from "../api/events";
+import { useMemo } from "react";
+import { useCampusEvents } from "../api/campus";
+import { useAuth } from "../context/AuthContext";
 import type { Event } from "../types";
 import { InsufficientScopeCard } from "../components/errors/InsufficientScopeCard";
 
 export function EventsPage() {
-  const { data, isLoading, error } = useEvents({ "page.size": 100, sort: "begin_at" });
+  const { user } = useAuth();
+  const campusId =
+    user?.campus_users?.find(c => c.is_primary)?.campus_id ??
+    user?.campus?.[0]?.id;
+  const nowIso = useMemo(() => new Date().toISOString(), []);
+  const { data, isLoading, error } = useCampusEvents(campusId, {
+    "page.size": 100,
+    sort: "begin_at",
+    "range.begin_at": `${nowIso},`,
+  });
 
   const events = data?.data ?? [];
-
-  const upcoming = events.filter(e => new Date(e.begin_at) > new Date());
-  const past = events.filter(e => new Date(e.begin_at) <= new Date());
+  const now = new Date();
+  const upcoming = events.filter(e =>
+    new Date(e.begin_at) > now &&
+    Boolean(campusId && e.campus_ids?.includes(campusId))
+  );
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
@@ -17,7 +30,7 @@ export function EventsPage() {
           &gt; EVENTS_
         </h1>
         <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
-          {upcoming.length} upcoming · {past.length} past
+          {upcoming.length} upcoming
         </span>
       </div>
 
@@ -29,9 +42,15 @@ export function EventsPage() {
 
       {error && <InsufficientScopeCard error={error} />}
 
-      {!isLoading && !error && !upcoming.length && !past.length && (
+      {!isLoading && !error && !campusId && (
         <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
-          No events found
+          No primary campus found
+        </p>
+      )}
+
+      {!isLoading && !error && campusId && !upcoming.length && (
+        <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
+          No upcoming events found for your campus
         </p>
       )}
 
@@ -42,17 +61,6 @@ export function EventsPage() {
           </h2>
           <div className="space-y-2">
             {upcoming.map(ev => <EventCard key={ev.id} event={ev} />)}
-          </div>
-        </>
-      )}
-
-      {past.length > 0 && (
-        <>
-          <h2 className="text-xs font-bold uppercase tracking-wider pt-2" style={{ color: "var(--color-faint)" }}>
-            Past
-          </h2>
-          <div className="space-y-2 opacity-60">
-            {past.slice(0, 20).map(ev => <EventCard key={ev.id} event={ev} />)}
           </div>
         </>
       )}
