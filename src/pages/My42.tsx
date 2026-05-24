@@ -181,8 +181,17 @@ export function My42Page() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-sm" style={{ color: "var(--color-faint)" }}>Loading profile...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center gap-6 animate-fade-in">
+        <div className="text-5xl" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>◈</div>
+        <div>
+          <h1 className="text-xl font-bold text-[#e2e8f0] mb-2" style={{ fontFamily: "var(--font-display)" }}>My 42</h1>
+          <p className="text-sm max-w-xs" style={{ color: "var(--color-muted)" }}>
+            Log in with your 42 account to see your projects, evaluations, and availability slots.
+          </p>
+        </div>
+        <button onClick={() => login()} className="btn-primary px-6 py-3">
+          Login with 42 →
+        </button>
       </div>
     );
   }

@@ -29,17 +29,23 @@ export default async function handler(request: Request): Promise<Response> {
 
   const redirectUri = `${origin}/api/auth/callback`;
 
-  const tokenRes = await fetch("https://api.intra.42.fr/oauth/token", {
-    method:  "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body:    new URLSearchParams({
-      grant_type:    "authorization_code",
-      client_id:     CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      code,
-      redirect_uri:  redirectUri,
-    }),
-  });
+  let tokenRes: Response;
+  try {
+    tokenRes = await fetch("https://api.intra.42.fr/oauth/token", {
+      method:  "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body:    new URLSearchParams({
+        grant_type:    "authorization_code",
+        client_id:     CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        code,
+        redirect_uri:  redirectUri,
+      }).toString(),
+    });
+  } catch (e: any) {
+    console.error("Token exchange network error:", e?.message);
+    return Response.redirect(`${origin}/#error=token_failed`, 302);
+  }
 
   if (!tokenRes.ok) {
     const detail = await tokenRes.text().catch(() => "");
@@ -47,7 +53,12 @@ export default async function handler(request: Request): Promise<Response> {
     return Response.redirect(`${origin}/#error=token_failed`, 302);
   }
 
-  const data: { access_token: string; expires_in: number; scope?: string } = await tokenRes.json() as any;
+  let data: { access_token: string; expires_in: number; scope?: string };
+  try {
+    data = await tokenRes.json() as typeof data;
+  } catch {
+    return Response.redirect(`${origin}/#error=token_failed`, 302);
+  }
 
   // Build fragment with token, expiry, and scope so AuthContext can pick it up
   const params = new URLSearchParams();

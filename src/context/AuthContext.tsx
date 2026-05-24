@@ -68,7 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const error = hash.get("error");
     if (error) {
       history.replaceState(null, "", window.location.pathname);
-      setAuthError(`Login failed: ${error}`);
+      const messages: Record<string, string> = {
+        not_configured: "The app is missing its 42 API credentials. Set FORTY_TWO_CLIENT_ID and FORTY_TWO_CLIENT_SECRET in your Vercel project settings.",
+        token_failed:   "The 42 token exchange failed. The OAuth code may have expired or the redirect URI may not match. Try logging in again.",
+        auth_failed:    "Authentication was cancelled or denied by 42.",
+      };
+      setAuthError(messages[error] ?? `Login failed: ${error}`);
       setLoading(false);
       return;
     }
