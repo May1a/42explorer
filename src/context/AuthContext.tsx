@@ -110,6 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function clearStoredToken() {
+    localStorage.removeItem(STORAGE_KEY_TOKEN);
+    localStorage.removeItem(STORAGE_KEY_EXPIRY);
+    localStorage.removeItem(STORAGE_KEY_SCOPE);
+  }
+
   async function fetchUserAndActivate(tkn: string) {
     setToken(tkn);
     setLoading(true);
@@ -120,10 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         setUser(await res.json());
+      } else if (res.status === 401) {
+        // Token has expired or been revoked — clear it and return to login
+        clearStoredToken();
+        setToken(null);
       } else {
         const body = await res.text().catch(() => "");
         console.error("Failed to fetch user profile:", res.status, body);
-        // Token is valid but profile fetch failed — keep the token, show error
         setAuthError(`Could not load profile (${res.status}). Check your Vercel env vars and redeploy.`);
       }
     } catch (e: any) {
@@ -138,6 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await fetch("/api/42?path=/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (res.status === 401) {
+      clearStoredToken();
+      setToken(null);
+      setUser(null);
+      setCurrentScope("public");
+      return;
+    }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(body || `Could not refresh profile (${res.status})`);
