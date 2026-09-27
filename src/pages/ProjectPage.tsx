@@ -53,42 +53,37 @@ function ScoreBadge({ pu }: { pu: ProjectUser }) {
   const failed = pu["validated?"] === false;
   const mark = pu.final_mark ?? 0;
 
-  let bg = "var(--color-card-hi)";
-  let border = "var(--color-border)";
   let label = "In Progress";
   let labelColor = "var(--color-faint)";
+  let markColor = "var(--color-muted)";
 
   if (validated) {
-    bg = "color-mix(in srgb, var(--color-green) 8%, var(--color-card))";
-    border = "color-mix(in srgb, var(--color-green) 25%, transparent)";
     label = "success";
     labelColor = "var(--color-green)";
+    markColor = "var(--color-green)";
   } else if (failed) {
-    bg = "color-mix(in srgb, var(--color-red) 8%, var(--color-card))";
-    border = "color-mix(in srgb, var(--color-red) 25%, transparent)";
     label = "fail";
     labelColor = "var(--color-red)";
+    markColor = "var(--color-red)";
   }
 
   return (
-    <div
-      className="flex flex-col items-center justify-center gap-3 p-6 rounded-lg border animate-fade-in-up stagger-1"
-      style={{ background: bg, borderColor: border }}
-    >
+    <div className="section-card p-6 flex flex-col items-center justify-center gap-3">
       <div className="flex items-center gap-1.5">
-        {validated && <span className="text-lg">✓</span>}
-        {failed && <span className="text-lg">×</span>}
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: labelColor }}>
+        {validated && (
+          <span className="text-[15px] font-medium" style={{ color: "var(--color-green)" }}>✓</span>
+        )}
+        {failed && (
+          <span className="text-[15px] font-medium" style={{ color: "var(--color-red)" }}>×</span>
+        )}
+        <span className="label" style={{ color: labelColor }}>
           {label}
         </span>
       </div>
       <div className="flex items-baseline gap-1">
         <span
-          className="text-5xl font-black tracking-tighter"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: validated ? "var(--color-green)" : failed ? "var(--color-red)" : "var(--color-muted)",
-          }}
+          className="num text-[40px] font-medium leading-none tracking-tight"
+          style={{ color: markColor }}
         >
           {mark}
         </span>
@@ -124,18 +119,20 @@ function TeamCard({
 
   return (
     <div
-      className={`rounded-lg border p-5 animate-fade-in-up ${isCurrent ? "section-card glow-primary" : "section-card"}`}
+      className={`section-card p-5 ${isCurrent ? "card-hover" : ""}`}
       style={{
-        borderColor: isCurrent ? "color-mix(in srgb, var(--color-primary) 20%, var(--color-border))" : "var(--color-border)",
+        borderColor: isCurrent
+          ? "color-mix(in srgb, var(--color-primary) 22%, var(--color-border))"
+          : "var(--color-border)",
       }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
-        <div>
-          <h3 className="text-base font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--color-primary)" }}>
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-semibold tracking-tight data-mono truncate" style={{ color: "var(--color-ink)" }}>
             {name}
           </h3>
-          <p className="text-xs mt-1" style={{ color: "var(--color-faint)" }}>
+          <p className="text-[12px] mt-1" style={{ color: "var(--color-faint)" }}>
             {locked
               ? `This team was locked ${timeAgo(pu.updated_at)}`
               : `Status: ${statusLabel(pu.status)}`}
@@ -143,16 +140,16 @@ function TeamCard({
         </div>
 
         {/* Status dots */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 pt-1">
           <span
-            className="w-2 h-2 rounded-full"
+            className="status-dot"
             style={{ background: isCurrent ? "var(--color-green)" : "var(--color-faint)" }}
           />
           <span
-            className="w-2 h-2 rounded-full"
+            className="status-dot"
             style={{ background: pu.occurrence > 1 ? (isCurrent ? "var(--color-faint)" : "var(--color-green)") : "var(--color-faint)" }}
           />
-          <span className="w-2 h-2 rounded-full" style={{ background: "var(--color-faint)" }} />
+          <span className="status-dot" style={{ background: "var(--color-faint)" }} />
         </div>
       </div>
 
@@ -161,14 +158,17 @@ function TeamCard({
         <span
           className="badge"
           style={{
-            background: `color-mix(in srgb, ${statusColor(pu.status)} 10%, transparent)`,
             color: statusColor(pu.status),
+            borderColor: `color-mix(in srgb, ${statusColor(pu.status)} 30%, var(--color-border))`,
           }}
         >
           {statusLabel(pu.status)}
         </span>
         {pu.final_mark != null && (
-          <span className="data-mono text-xs" style={{ color: pu["validated?"] ? "var(--color-green)" : "var(--color-red)" }}>
+          <span
+            className="num text-[13px] font-medium"
+            style={{ color: pu["validated?"] ? "var(--color-green)" : "var(--color-red)" }}
+          >
             {pu.final_mark}%
           </span>
         )}
@@ -176,17 +176,15 @@ function TeamCard({
 
       {/* Evaluations mini */}
       {isCurrent && (
-        <div className="mb-4 p-3 rounded-md" style={{ background: "var(--color-card-hi)" }}>
+        <div className="mb-4 p-3 rounded" style={{ background: "var(--color-card-hi)" }}>
           <div className="flex items-center gap-2 mb-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--color-faint)" }}>
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
-            <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-faint)" }}>
-              Evaluations
-            </span>
+            <span className="label">Evaluations</span>
           </div>
-          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
+          <p className="text-[12.5px]" style={{ color: "var(--color-muted)" }}>
             Evaluations will appear here once scheduled.
           </p>
         </div>
@@ -197,13 +195,13 @@ function TeamCard({
         <button
           onClick={onSubmit}
           disabled={isSubmitting || pu.status === "finished" || pu.status === "parent"}
-          className="w-full py-2.5 text-sm font-bold rounded-md transition-all disabled:opacity-30 disabled:cursor-default hover:brightness-110 active:scale-[0.98]"
-          style={{
-            background: pu.status === "waiting_for_correction" ? "var(--color-purple)" : "var(--color-green)",
-            color: "#000",
-          }}
+          className={
+            pu.status === "waiting_for_correction"
+              ? "btn-secondary w-full"
+              : "btn-primary w-full"
+          }
         >
-          {isSubmitting ? "..." : pu.status === "waiting_for_correction" ? "Waiting for evaluation" : "Set the project as finished"}
+          {isSubmitting ? "…" : pu.status === "waiting_for_correction" ? "Waiting for evaluation" : "Set the project as finished"}
         </button>
       )}
     </div>
@@ -228,14 +226,14 @@ function OldTeamRow({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 px-4 py-3 rounded-md transition-colors cursor-default"
-      style={{ background: "var(--color-card-hi)" }}
+      className="flex items-center justify-between gap-3 px-1 py-2.5"
+      style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
     >
-      <span className="text-sm font-medium" style={{ color: "var(--color-primary)" }}>
+      <span className="text-[13px] font-medium data-mono truncate" style={{ color: "var(--color-ink)" }}>
         {name}
       </span>
       <span
-        className="data-mono text-sm font-bold"
+        className="num text-[13px] font-medium shrink-0"
         style={{ color: pu["validated?"] ? "var(--color-green)" : mark > 0 ? "var(--color-yellow)" : "var(--color-red)" }}
       >
         {mark}%
@@ -308,9 +306,9 @@ export function ProjectPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-4">
+      <div className="p-5 md:p-8 max-w-5xl mx-auto space-y-4">
         <div className="skeleton h-8 w-64" />
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
           <div className="space-y-4">
             <div className="skeleton h-40 w-full" />
             <div className="skeleton h-24 w-full" />
@@ -326,7 +324,7 @@ export function ProjectPage() {
 
   if (projectError) {
     return (
-      <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-4">
+      <div className="p-5 md:p-8 max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-center min-h-[60vh]">
           <InsufficientScopeCard error={projectError} />
         </div>
@@ -337,56 +335,58 @@ export function ProjectPage() {
   if (!project) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-sm" style={{ color: "var(--color-faint)" }}>Project not found</p>
+        <p className="text-[13.5px]" style={{ color: "var(--color-faint)" }}>Project not found</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-5 md:p-8 max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="mb-8 animate-fade-in-up stagger-1">
+      <div className="mb-6">
         <button
           onClick={() => navigate({ to: "/" })}
-          className="text-xs font-medium mb-3 transition-colors hover:text-[#e2e8f0]"
-          style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
+          className="text-[12px] font-medium data-mono mb-3 transition-colors"
+          style={{ color: "var(--color-faint)" }}
         >
           ← back
         </button>
-        <h1
-          className="text-2xl md:text-3xl font-bold tracking-tight"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {user?.login ? `${user.login}'s ` : ""}
-          <span style={{ color: "var(--color-primary)" }}>{project.name}</span>
-          {retries > 0 && (
-            <span className="text-lg font-medium ml-2" style={{ color: "var(--color-muted)" }}>
-              ({retries} {retries === 1 ? "retry" : "retries"})
-            </span>
-          )}
-        </h1>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+          <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+            {user?.login ? `${user.login}'s ` : ""}
+            <span style={{ color: "var(--color-primary)" }}>{project.name}</span>
+            {retries > 0 && (
+              <span className="text-[15px] font-medium ml-2" style={{ color: "var(--color-muted)" }}>
+                ({retries} {retries === 1 ? "retry" : "retries"})
+              </span>
+            )}
+          </h1>
+        </div>
+        <p className="text-[13.5px]" style={{ color: "var(--color-muted)" }}>
+          Attempt history, team status, and marks for this project.
+        </p>
       </div>
 
       {/* Notifications */}
       {actionSuccess && (
         <div
-          className="flex items-center justify-between gap-3 rounded-md border px-4 py-2.5 text-xs mb-6 animate-fade-in-up"
+          className="flex items-center justify-between gap-3 rounded border px-4 py-2.5 text-[12.5px] mb-6"
           style={{
-            background: "color-mix(in srgb, var(--color-green) 8%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-green) 25%, transparent)",
+            background: "var(--color-surface)",
+            borderColor: "color-mix(in srgb, var(--color-green) 30%, var(--color-border))",
             color: "var(--color-green)",
           }}
         >
           <span>✓ {actionSuccess}</span>
-          <button onClick={() => setActionSuccess(null)} className="opacity-60 hover:opacity-100 font-bold">×</button>
+          <button onClick={() => setActionSuccess(null)} className="opacity-60 hover:opacity-100">×</button>
         </div>
       )}
       {actionError && (
         <div
-          className="flex items-start justify-between gap-3 rounded-md border px-4 py-2.5 text-xs mb-6 animate-fade-in-up"
+          className="flex items-start justify-between gap-3 rounded border px-4 py-2.5 text-[12.5px] mb-6"
           style={{
-            background: "color-mix(in srgb, var(--color-red) 8%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-red) 25%, transparent)",
+            background: "var(--color-surface)",
+            borderColor: "color-mix(in srgb, var(--color-red) 30%, var(--color-border))",
             color: "var(--color-red)",
           }}
         >
@@ -395,14 +395,14 @@ export function ProjectPage() {
             {actionError.includes("projects scope") && (
               <button
                 onClick={() => login(["projects"])}
-                className="ml-2 font-bold underline"
+                className="ml-2 font-medium underline"
                 style={{ color: "var(--color-primary)" }}
               >
                 Re-authorize with projects scope →
               </button>
             )}
           </div>
-          <button onClick={() => setActionError(null)} className="shrink-0 opacity-60 hover:opacity-100 font-bold">×</button>
+          <button onClick={() => setActionError(null)} className="shrink-0 opacity-60 hover:opacity-100">×</button>
         </div>
       )}
 
@@ -413,7 +413,7 @@ export function ProjectPage() {
           {currentAttempt && <ScoreBadge pu={currentAttempt} />}
 
           {/* Meta */}
-          <div className="section-card p-5 animate-fade-in-up stagger-2">
+          <div className="section-card p-5">
             <div className="space-y-3">
               <MetaRow label="Type" value={project.exam ? "Solo" : "Group"} />
               <MetaRow label="Slug" value={project.slug} mono />
@@ -427,11 +427,11 @@ export function ProjectPage() {
               )}
             </div>
 
-            <div className="h-px my-4" style={{ background: "var(--color-border)" }} />
+            <div className="h-px my-4" style={{ background: "var(--color-rule-soft)" }} />
 
             <button
               onClick={() => openOfficial("unverified_workflow", `https://projects.intra.42.fr/projects/${project.slug}`)}
-              className="flex items-center gap-2 text-xs font-medium transition-colors group"
+              className="flex items-center gap-2 text-[12px] font-medium transition-colors group"
               style={{ color: "var(--color-primary)" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -468,39 +468,36 @@ export function ProjectPage() {
           ) : correctedError && correctorError ? (
             <InsufficientScopeCard error={correctedError} />
           ) : projectEvals.length > 0 ? (
-            <div className="section-card p-5 animate-fade-in-up stagger-3">
-              <h2
-                className="text-[11px] font-semibold uppercase tracking-widest mb-4 accent-line"
-                style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-              >
+            <div className="section-card p-5">
+              <h2 className="text-[13px] font-semibold tracking-tight mb-4 accent-line" style={{ color: "var(--color-ink)" }}>
                 Evaluations
               </h2>
-              <div className="space-y-2">
+              <div style={{ borderTop: "1px solid var(--color-border)" }}>
                 {projectEvals.map((ev) => (
                   <div
                     key={ev.id}
-                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-md"
-                    style={{ background: "var(--color-card-hi)" }}
+                    className="flex items-center justify-between gap-3 px-1 py-2.5"
+                    style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
                   >
                     <div className="min-w-0">
-                      <div className="text-xs font-medium text-[#e2e8f0] truncate">
+                      <div className="text-[13px] font-medium truncate" style={{ color: "var(--color-ink)" }}>
                         {ev.scale?.name ?? `Scale #${ev.scale_id}`}
                       </div>
-                      <div className="text-[10px] mt-0.5" style={{ color: "var(--color-faint)" }}>
+                      <div className="text-[11.5px] mt-0.5 data-mono" style={{ color: "var(--color-faint)" }}>
                         {new Date(ev.begin_at).toLocaleDateString()} · {ev.team?.name ?? "Team"}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                       {ev.final_mark != null && (
                         <span
-                          className="data-mono text-sm font-bold"
+                          className="num text-[13px] font-medium"
                           style={{ color: ev.final_mark >= 50 ? "var(--color-green)" : "var(--color-red)" }}
                         >
                           {ev.final_mark}
                         </span>
                       )}
                       <div
-                        className="text-[9px] mt-0.5"
+                        className="text-[11px] mt-0.5"
                         style={{ color: ev.filled_at ? "var(--color-green)" : "var(--color-yellow)" }}
                       >
                         {ev.filled_at ? "Done" : "Pending"}
@@ -513,11 +510,8 @@ export function ProjectPage() {
           ) : null}
 
           {!hasScope("projects") && !correctedError && !correctorError && projectEvals.length === 0 && (
-            <div className="section-card p-5 animate-fade-in-up stagger-3">
-              <h2
-                className="text-[11px] font-semibold uppercase tracking-widest mb-4 accent-line"
-                style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-              >
+            <div className="section-card p-5">
+              <h2 className="text-[13px] font-semibold tracking-tight mb-4 accent-line" style={{ color: "var(--color-ink)" }}>
                 Evaluations
               </h2>
               <ScopePrompt
@@ -529,14 +523,11 @@ export function ProjectPage() {
 
           {/* Old teams */}
           {oldAttempts.length > 0 && (
-            <div className="animate-fade-in-up stagger-4">
-              <h2
-                className="text-[11px] font-semibold uppercase tracking-widest mb-3 text-center"
-                style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-              >
+            <div>
+              <h2 className="text-[13px] font-semibold tracking-tight mb-3" style={{ color: "var(--color-ink)" }}>
                 Old Teams
               </h2>
-              <div className="space-y-1.5">
+              <div style={{ borderTop: "1px solid var(--color-border)" }}>
                 {oldAttempts.map((pu) => (
                   <OldTeamRow
                     key={pu.id}
@@ -552,15 +543,13 @@ export function ProjectPage() {
 
           {/* No attempts yet */}
           {!attemptsError && attempts.length === 0 && (
-            <div
-              className="section-card p-8 text-center animate-fade-in-up stagger-3"
-            >
-              <p className="text-sm mb-4" style={{ color: "var(--color-muted)" }}>
+            <div className="section-card p-8 text-center">
+              <p className="text-[13.5px] mb-4" style={{ color: "var(--color-muted)" }}>
                 You haven&apos;t started this project yet.
               </p>
               <button
                 onClick={() => navigate({ to: "/" })}
-                className="btn-primary text-xs"
+                className="btn-primary"
               >
                 Go to My 42 to start
               </button>
@@ -587,12 +576,10 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-faint)" }}>
-        {label}
-      </span>
+      <span className="label">{label}</span>
       <span
-        className={`text-xs font-medium ${mono ? "data-mono" : ""}`}
-        style={{ color: color ?? "#e2e8f0" }}
+        className={`text-[12.5px] font-medium ${mono ? "data-mono" : ""}`}
+        style={{ color: color ?? "var(--color-ink)" }}
       >
         {value}
       </span>

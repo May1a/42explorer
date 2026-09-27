@@ -13,12 +13,12 @@ import { useQueryClient } from "@tanstack/react-query";
 /* ── Constants ───────────────────────────────────────────────────────────── */
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  finished:               { label: "Finished",                color: "var(--color-green)" },
-  in_progress:            { label: "In Progress",             color: "var(--color-primary)" },
-  searching_a_group:      { label: "Searching Group",         color: "var(--color-yellow)" },
-  creating_group:         { label: "Creating Group",          color: "var(--color-yellow)" },
-  waiting_for_correction: { label: "Waiting Correction",      color: "var(--color-purple)" },
-  parent:                 { label: "Parent",                  color: "var(--color-faint)" },
+  finished:               { label: "Finished",           color: "var(--color-green)" },
+  in_progress:            { label: "In progress",        color: "var(--color-primary)" },
+  searching_a_group:      { label: "Searching group",    color: "var(--color-yellow)" },
+  creating_group:         { label: "Creating group",     color: "var(--color-yellow)" },
+  waiting_for_correction: { label: "Waiting correction", color: "var(--color-purple)" },
+  parent:                 { label: "Parent",             color: "var(--color-faint)" },
 };
 
 /* ── Small Components ────────────────────────────────────────────────────── */
@@ -28,7 +28,10 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className="badge"
-      style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 10%, transparent)` }}
+      style={{
+        color: s.color,
+        borderColor: `color-mix(in srgb, ${s.color} 30%, var(--color-border))`,
+      }}
     >
       {s.label}
     </span>
@@ -37,15 +40,12 @@ function StatusBadge({ status }: { status: string }) {
 
 function SectionHeader({ title, count }: { title: string; count?: number }) {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <h2
-        className="text-[11px] font-semibold uppercase tracking-[0.15em] accent-line pb-1"
-        style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-      >
+    <div className="flex items-center justify-between mb-2 pb-2" style={{ borderBottom: "1px solid var(--color-border)" }}>
+      <h2 className="text-[13px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
         {title}
       </h2>
       {count != null && (
-        <span className="data-mono text-[10px]" style={{ color: "var(--color-faint)" }}>
+        <span className="text-[11.5px] num" style={{ color: "var(--color-faint)" }}>
           {count}
         </span>
       )}
@@ -55,7 +55,7 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <p className="text-xs py-4 text-center" style={{ color: "var(--color-faint)" }}>
+    <p className="text-[13px] py-4 text-center" style={{ color: "var(--color-faint)" }}>
       {text}
     </p>
   );
@@ -182,38 +182,44 @@ export function My42Page() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center gap-6 animate-fade-in">
-        <div className="text-5xl" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>◈</div>
+        <div
+          className="w-12 h-12 rounded-md flex items-center justify-center"
+          style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
+        >
+          <span className="text-sm font-semibold num">42</span>
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-[#e2e8f0] mb-2" style={{ fontFamily: "var(--font-display)" }}>My 42</h1>
+          <h1 className="text-[24px] font-semibold tracking-tight mb-2" style={{ color: "var(--color-ink)" }}>My 42</h1>
           <p className="text-sm max-w-xs" style={{ color: "var(--color-muted)" }}>
             Log in with your 42 account to see your projects, evaluations, and availability slots.
           </p>
         </div>
         <button onClick={() => login()} className="btn-primary px-6 py-3">
-          Login with 42 →
+          Login with 42
         </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
+    <div className="p-5 md:p-8 max-w-4xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap animate-fade-in-up stagger-1">
-        <h1
-          className="text-xl md:text-2xl font-bold tracking-tight"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          My <span style={{ color: "var(--color-primary)" }}>42</span>
+      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+        <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+          My 42
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-[180px] max-w-[240px]">
           {mainCursus && <LevelBar level={mainCursus.level} />}
         </div>
       </div>
+      <p className="text-[13.5px] mb-5" style={{ color: "var(--color-muted)" }}>
+        Projects, evaluations, and availability.
+      </p>
 
-      {/* Quick Stats Bar */}
+      {/* Quick stats — columns on a rule */}
       <div
-        className="section-card p-4 flex flex-wrap items-center gap-5 md:gap-8 animate-fade-in-up stagger-2"
+        className="flex flex-wrap items-center gap-5 md:gap-8 py-4 mb-4"
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <StatItem label="Level" value={mainCursus?.level?.toFixed(2) ?? "?"} />
         <StatItem label="Correction" value={String(user.correction_point)} />
@@ -229,23 +235,23 @@ export function My42Page() {
       {/* Notifications */}
       {actionSuccess && (
         <div
-          className="flex items-center justify-between gap-3 rounded-md border px-4 py-2.5 text-xs animate-fade-in-up"
+          className="flex items-center justify-between gap-3 rounded-md border px-4 py-2.5 text-[12.5px] animate-fade-in-up"
           style={{
-            background: "color-mix(in srgb, var(--color-green) 8%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-green) 25%, transparent)",
+            background: "color-mix(in srgb, var(--color-green) 8%, var(--color-surface))",
+            borderColor: "color-mix(in srgb, var(--color-green) 30%, var(--color-border))",
             color: "var(--color-green)",
           }}
         >
-          <span>✓ {actionSuccess}</span>
-          <button onClick={() => setActionSuccess(null)} className="opacity-60 hover:opacity-100 font-bold">×</button>
+          <span>{actionSuccess}</span>
+          <button onClick={() => setActionSuccess(null)} className="opacity-60 hover:opacity-100 font-medium">×</button>
         </div>
       )}
       {actionError && (
         <div
-          className="flex items-start justify-between gap-3 rounded-md border px-4 py-2.5 text-xs animate-fade-in-up"
+          className="flex items-start justify-between gap-3 rounded-md border px-4 py-2.5 text-[12.5px] animate-fade-in-up"
           style={{
-            background: "color-mix(in srgb, var(--color-red) 8%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-red) 25%, transparent)",
+            background: "color-mix(in srgb, var(--color-red) 8%, var(--color-surface))",
+            borderColor: "color-mix(in srgb, var(--color-red) 30%, var(--color-border))",
             color: "var(--color-red)",
           }}
         >
@@ -278,7 +284,7 @@ export function My42Page() {
           {/* ── Left column ── */}
           <div className="space-y-5">
             {/* Current Projects */}
-            <section className="section-card p-5 animate-fade-in-up stagger-3">
+            <section className="section-card p-5">
               <SectionHeader title={`Current Project${currentProjects.length !== 1 ? "s" : ""}`} count={currentProjects.length} />
 
               {mpError ? (
@@ -301,7 +307,7 @@ export function My42Page() {
             </section>
 
             {/* Available Projects */}
-            <section className="section-card p-5 animate-fade-in-up stagger-4">
+            <section className="section-card p-5">
               <SectionHeader title="Available Projects" count={hasScope("projects") ? availableProjects.length : undefined} />
 
               {!hasScope("projects") ? (
@@ -336,7 +342,7 @@ export function My42Page() {
           {/* ── Right column ── */}
           <div className="space-y-5">
             {/* Evaluations */}
-            <section className="section-card p-5 animate-fade-in-up stagger-3">
+            <section className="section-card p-5">
               <SectionHeader title="Evaluations" count={myEvals.length} />
 
               {cByError && !cForError ? (
@@ -362,22 +368,19 @@ export function My42Page() {
             </section>
 
             {/* Slots */}
-            <section className="section-card p-5 animate-fade-in-up stagger-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2
-                  className="text-[11px] font-semibold uppercase tracking-[0.15em] accent-line pb-1"
-                  style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
-                >
+            <section className="section-card p-5">
+              <div className="flex items-center justify-between mb-2 pb-2" style={{ borderBottom: "1px solid var(--color-border)" }}>
+                <h2 className="text-[13px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
                   My Slots
                 </h2>
                 {hasScope("projects") && (
                   <button
                     onClick={handleQuickSlot}
                     disabled={createSlot.isPending}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
-                    style={{ background: "var(--color-primary)", color: "#000" }}
+                    className="text-[12px] font-medium px-2.5 py-1 rounded-md disabled:opacity-50"
+                    style={{ background: "var(--color-primary)", color: "#FBF8F3" }}
                   >
-                    {createSlot.isPending ? "..." : "+1h"}
+                    {createSlot.isPending ? "…" : "+1h"}
                   </button>
                 )}
               </div>
@@ -401,14 +404,14 @@ export function My42Page() {
 
               <a
                 href="/slots"
-                className="inline-block mt-4 text-[10px] font-semibold transition-colors hover:text-[#e2e8f0]"
-                style={{ color: "var(--color-muted)" }}
+                className="inline-block mt-4 text-[11.5px] font-medium data-mono"
+                style={{ color: "var(--color-primary)" }}
                 onClick={(e) => {
                   e.preventDefault();
                   window.location.href = "/slots";
                 }}
               >
-                Full calendar →
+                full calendar →
               </a>
             </section>
           </div>
@@ -422,14 +425,14 @@ export function My42Page() {
 
 function StatItem({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col">
       <span
-        className="text-base md:text-lg font-black"
-        style={{ color: color ?? "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+        className="text-[16px] md:text-[18px] font-medium num"
+        style={{ color: color ?? "var(--color-ink)" }}
       >
         {value}
       </span>
-      <span className="text-[10px] uppercase tracking-widest font-medium" style={{ color: "var(--color-faint)" }}>
+      <span className="text-[11.5px] font-medium mt-0.5" style={{ color: "var(--color-faint)" }}>
         {label}
       </span>
     </div>
@@ -449,8 +452,8 @@ function CurrentProjectCard({
 }) {
   return (
     <div
-      className="rounded-md border p-3.5 card-hover cursor-pointer group"
-      style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}
+      className="border p-3.5 card-hover cursor-pointer group"
+      style={{ background: "var(--color-surface)", borderColor: "var(--color-border)", borderRadius: 4 }}
       onClick={onNavigate}
     >
       <div className="flex items-start justify-between gap-3">
@@ -459,7 +462,7 @@ function CurrentProjectCard({
             <StatusBadge status={pu.status} />
             {pu.final_mark != null && (
               <span
-                className="data-mono text-xs font-bold"
+                className="data-mono text-[12.5px] font-medium"
                 style={{
                   color: pu["validated?"] ? "var(--color-green)" : "var(--color-red)",
                 }}
@@ -468,10 +471,10 @@ function CurrentProjectCard({
               </span>
             )}
           </div>
-          <div className="text-sm font-semibold text-[#e2e8f0] truncate group-hover:text-[var(--color-primary)] transition-colors">
+          <div className="text-[14px] font-medium truncate" style={{ color: "var(--color-ink)" }}>
             {pu.project.name}
           </div>
-          <div className="text-[10px] mt-1 data-mono" style={{ color: "var(--color-faint)" }}>
+          <div className="text-[11.5px] mt-1 data-mono" style={{ color: "var(--color-faint)" }}>
             {pu.project.slug} · attempt #{pu.occurrence}
             {pu.current_team_id ? ` · team #${pu.current_team_id}` : ""}
           </div>
@@ -483,15 +486,21 @@ function CurrentProjectCard({
             onSubmit();
           }}
           disabled={isSubmitting || pu.status === "finished" || pu.status === "parent"}
-          className="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-sm transition-all disabled:opacity-30 disabled:cursor-default hover:brightness-110 active:scale-95"
-          style={{
-            background: pu.status === "waiting_for_correction"
-              ? "var(--color-purple)"
-              : "var(--color-primary)",
-            color: "#000",
-          }}
+          className="shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-md disabled:opacity-30 disabled:cursor-default"
+          style={
+            pu.status === "waiting_for_correction"
+              ? {
+                  background: "var(--color-surface)",
+                  color: "var(--color-purple)",
+                  border: "1px solid color-mix(in srgb, var(--color-purple) 35%, var(--color-border))",
+                }
+              : {
+                  background: "var(--color-primary)",
+                  color: "#FBF8F3",
+                }
+          }
         >
-          {isSubmitting ? "..." : pu.status === "waiting_for_correction" ? "View" : "Submit"}
+          {isSubmitting ? "…" : pu.status === "waiting_for_correction" ? "View" : "Submit"}
         </button>
       </div>
     </div>
@@ -509,28 +518,22 @@ function AvailableProjectRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 px-3 py-2 rounded-md group transition-colors"
-      style={{ background: "var(--color-card-hi)" }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "var(--color-card-hover)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "var(--color-card-hi)";
-      }}
+      className="flex items-center justify-between gap-2 px-2 py-2 rounded-md"
+      style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-[#e2e8f0] truncate">{project.name}</div>
-        <div className="text-[10px] data-mono" style={{ color: "var(--color-faint)" }}>
+        <div className="text-[13px] font-medium truncate" style={{ color: "var(--color-ink)" }}>{project.name}</div>
+        <div className="text-[11.5px] data-mono" style={{ color: "var(--color-faint)" }}>
           {project.slug}
         </div>
       </div>
       <button
         onClick={onStart}
         disabled={isStarting}
-        className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-sm transition-all disabled:opacity-50 hover:brightness-110 active:scale-95"
-        style={{ background: "var(--color-primary)", color: "#000" }}
+        className="shrink-0 text-[12px] font-medium px-2.5 py-1 rounded-md disabled:opacity-50"
+        style={{ background: "var(--color-primary)", color: "#FBF8F3" }}
       >
-        {isStarting ? "..." : "Start"}
+        {isStarting ? "…" : "Start"}
       </button>
     </div>
   );
@@ -542,8 +545,8 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
 
   return (
     <div
-      className="rounded-md border p-2.5 card-hover"
-      style={{ background: "var(--color-card-hi)", borderColor: "var(--color-border)" }}
+      className="border p-2.5 card-hover"
+      style={{ background: "var(--color-surface)", borderColor: "var(--color-border)", borderRadius: 4 }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -552,29 +555,26 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
               className="badge"
               style={{
                 color: filled ? "var(--color-green)" : "var(--color-yellow)",
-                background: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 10%, transparent)`,
+                borderColor: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 30%, var(--color-border))`,
               }}
             >
               {filled ? "Done" : "Pending"}
             </span>
-            <span
-              className="badge"
-              style={{ color: "var(--color-faint)", background: "var(--color-card)" }}
-            >
+            <span className="badge">
               {ev._kind === "as_corrected" ? "My eval" : "I evaluate"}
             </span>
           </div>
-          <div className="text-xs font-medium text-[#e2e8f0] truncate">
+          <div className="text-[13px] font-medium truncate" style={{ color: "var(--color-ink)" }}>
             {ev.scale?.name ?? `Scale #${ev.scale_id}`}
           </div>
-          <div className="text-[10px] mt-0.5" style={{ color: "var(--color-faint)" }}>
+          <div className="text-[11.5px] mt-0.5" style={{ color: "var(--color-faint)" }}>
             {new Date(ev.begin_at).toLocaleDateString()} · {ev.team?.name ?? `Team #${ev.team?.id}`}
           </div>
         </div>
         <div className="text-right shrink-0">
           {mark != null && (
             <div
-              className="data-mono text-sm font-black"
+              className="data-mono text-[15px] font-medium"
               style={{
                 color: mark >= 50 ? "var(--color-green)" : "var(--color-red)",
               }}
@@ -584,7 +584,7 @@ function EvalMiniCard({ eval: ev }: { eval: ScaleTeam & { _kind: "as_corrected" 
           )}
           <button
             onClick={() => openOfficial("unverified_workflow", "https://profile.42.fr/")}
-            className="text-[9px] font-medium mt-1 transition-colors hover:text-[#e2e8f0]"
+            className="text-[11px] font-medium mt-1"
             style={{ color: "var(--color-muted)" }}
           >
             Open 42 ↗
@@ -602,25 +602,25 @@ function SlotMiniRow({ slot }: { slot: Slot }) {
 
   return (
     <div
-      className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-md"
-      style={{ background: "var(--color-card-hi)" }}
+      className="flex items-center justify-between gap-2 px-2 py-2"
+      style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
     >
       <div className="flex items-center gap-2 min-w-0">
         <span
-          className="status-dot"
+          className="online-dot"
           style={{ background: scaleName ? "var(--color-purple)" : "var(--color-green)" }}
         />
-        <span className="text-xs truncate data-mono" style={{ color: "#e2e8f0" }}>
+        <span className="text-[12.5px] truncate data-mono" style={{ color: "var(--color-ink)" }}>
           {begin.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[10px] data-mono" style={{ color: "var(--color-faint)" }}>
+        <span className="text-[11.5px] data-mono" style={{ color: "var(--color-faint)" }}>
           {begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}–
           {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
         {scaleName && (
-          <span className="text-[9px] truncate max-w-[80px]" style={{ color: "var(--color-purple)" }}>
+          <span className="text-[11px] truncate max-w-[80px]" style={{ color: "var(--color-purple)" }}>
             {scaleName}
           </span>
         )}

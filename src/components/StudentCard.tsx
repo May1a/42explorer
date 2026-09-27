@@ -10,7 +10,7 @@ interface Props {
 
 export function StudentCard({ user, onClick, compact = false }: Props) {
   const coalition = user.coalitions_users?.[0]?.coalition;
-  const cursusUser = user.cursus_users?.find(c => c.cursus_id === 21) // 42cursus
+  const cursusUser = user.cursus_users?.find(c => c.cursus_id === 21)
     ?? user.cursus_users?.[user.cursus_users.length - 1];
   const level = cursusUser?.level ?? 0;
   const isOnline = Boolean(user.location);
@@ -23,25 +23,30 @@ export function StudentCard({ user, onClick, compact = false }: Props) {
       <div
         onClick={onClick}
         className={[
-          "flex items-center gap-3 p-3 rounded-xl border transition-all",
-          "bg-card border-border hover:border-border-hi hover:bg-card-hi",
+          "flex items-center gap-3 px-2 py-2.5 rounded-md transition-colors",
           onClick ? "cursor-pointer" : "",
         ].join(" ")}
+        style={{ background: "transparent", borderBottom: "1px solid var(--color-rule-soft)" }}
       >
         <div className="relative shrink-0">
           <img
             src={user.image?.versions?.small ?? `https://cdn.intra.42.fr/users/small_default.png`}
             alt={user.login}
-            className="w-9 h-9 rounded-full object-cover"
+            className="w-8 h-8 rounded-full object-cover avatar-soft"
           />
-          {isOnline && <span className="online-pulse absolute -bottom-0.5 -right-0.5" />}
+          {isOnline && (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full"
+              style={{ background: "var(--color-green)", border: "2px solid var(--color-bg)" }}
+            />
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm truncate">{user.login}</div>
-          <div className="text-xs text-muted truncate">{primaryCampus?.name}</div>
+          <div className="font-medium text-[13px] truncate data-mono">{user.login}</div>
+          <div className="text-[12px] truncate" style={{ color: "var(--color-faint)" }}>{primaryCampus?.name}</div>
         </div>
-        <div className="text-xs font-mono text-primary shrink-0">
-          {level > 0 ? `lv.${Math.floor(level)}` : ""}
+        <div className="text-[12px] num shrink-0" style={{ color: "var(--color-muted)" }}>
+          {level > 0 ? level.toFixed(2) : ""}
         </div>
       </div>
     );
@@ -51,58 +56,66 @@ export function StudentCard({ user, onClick, compact = false }: Props) {
     <div
       onClick={onClick}
       className={[
-        "relative flex flex-col gap-3 p-4 rounded-xl border transition-all overflow-hidden",
-        "bg-card border-border",
-        onClick ? "cursor-pointer hover:border-border-hi hover:bg-card-hi hover:-translate-y-0.5" : "",
+        "relative flex flex-col gap-3 p-4 transition-colors overflow-hidden",
+        onClick ? "cursor-pointer" : "",
       ].join(" ")}
+      style={{
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 4,
+      }}
     >
       {coalition && <CoalitionStripe color={coalition.color} />}
 
-      {/* Avatar + identity */}
       <div className="flex items-start gap-3">
         <div className="relative shrink-0">
           <img
             src={user.image?.versions?.medium ?? `https://cdn.intra.42.fr/users/medium_default.png`}
             alt={user.login}
-            className="w-14 h-14 rounded-xl object-cover bg-card-hi"
+            className="w-12 h-12 rounded-full object-cover avatar-soft"
           />
           {isOnline && (
             <span
-              className="online-pulse absolute -bottom-1 -right-1 border-2"
-              style={{ borderColor: "var(--color-card)" }}
+              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+              style={{ background: "var(--color-green)", border: "2px solid var(--color-surface)" }}
             />
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-sm truncate">{user.displayname || user.login}</div>
-          <div className="text-xs text-muted truncate font-mono">@{user.login}</div>
+          <div className="font-semibold text-[15px] tracking-tight truncate">
+            {user.displayname || user.login}
+          </div>
+          <div className="text-[12.5px] truncate data-mono" style={{ color: "var(--color-primary)" }}>
+            @{user.login}
+          </div>
           {title && (
-            <div className="text-xs mt-0.5 truncate" style={{ color: coalition?.color ?? "var(--color-primary)" }}>
+            <div
+              className="text-[12px] mt-0.5 truncate italic"
+              style={{ color: coalition?.color ?? "var(--color-muted)" }}
+            >
               {title.name.replace("%login", user.login ?? "")}
             </div>
           )}
         </div>
       </div>
 
-      {/* Level bar */}
       {level > 0 && <LevelBar level={level} />}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-muted">
+      <div className="flex items-center justify-between text-[12px]" style={{ color: "var(--color-faint)" }}>
         <span className="truncate">{primaryCampus?.name ?? "—"}</span>
         {isOnline ? (
           <span
-            className="flex items-center gap-1 font-semibold shrink-0"
+            className="flex items-center gap-1.5 font-medium shrink-0"
             style={{ color: "var(--color-green)" }}
           >
-            <span className="online-pulse" />
+            <span className="online-dot" />
             {user.location}
           </span>
         ) : (
           coalition && (
             <span
-              className="font-semibold shrink-0 text-xs"
+              className="font-medium shrink-0"
               style={{ color: coalition.color }}
             >
               {coalition.name}

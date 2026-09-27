@@ -28,13 +28,24 @@ export function Pagination({ page, perPage, total, onChange }: Props) {
       onClick={() => !disabled && onChange(target)}
       disabled={disabled}
       className={[
-        "min-w-[34px] h-[34px] md:min-w-[34px] md:h-[34px] flex items-center justify-center rounded-lg text-xs md:text-sm font-medium transition-all",
+        "min-w-[32px] h-[32px] flex items-center justify-center rounded text-[13px] font-medium transition-colors num",
         active
-          ? "bg-primary text-black font-bold"
+          ? ""
           : disabled
-          ? "text-faint cursor-not-allowed"
-          : "text-muted bg-card border border-border hover:border-border-hi hover:text-[#e2e8f0]",
+          ? "cursor-not-allowed"
+          : "",
       ].join(" ")}
+      style={
+        active
+          ? { background: "var(--color-primary)", color: "#FBF8F3" }
+          : disabled
+          ? { color: "var(--color-faint)" }
+          : {
+              color: "var(--color-muted)",
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+            }
+      }
     >
       {label}
     </button>
@@ -45,13 +56,13 @@ export function Pagination({ page, perPage, total, onChange }: Props) {
       {btn("←", page - 1, page === 1)}
       {pages.map((p, i) =>
         p === "..." ? (
-          <span key={`dots-${i}`} className="text-faint px-1">…</span>
+          <span key={`dots-${i}`} className="px-1" style={{ color: "var(--color-faint)" }}>…</span>
         ) : (
           btn(p, p as number, false, p === page)
         )
       )}
       {btn("→", page + 1, page === totalPages)}
-      <span className="text-xs text-muted ml-2">
+      <span className="text-[12px] ml-2 num" style={{ color: "var(--color-faint)" }}>
         {((page - 1) * perPage) + 1}–{Math.min(page * perPage, total)} of {total.toLocaleString()}
       </span>
     </div>

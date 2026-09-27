@@ -1,42 +1,29 @@
 interface Props {
-  level: number;   // e.g. 14.37
+  level: number;
   showLabel?: boolean;
   height?: number;
 }
 
-export function LevelBar({ level, showLabel = true, height = 6 }: Props) {
-  const whole   = Math.floor(level);
-  const frac    = level - whole;
-  const pct     = Math.round(frac * 100);
+export function LevelBar({ level, showLabel = true, height = 2 }: Props) {
+  const whole = Math.floor(level);
+  const frac  = level - whole;
+  const pct   = Math.round(frac * 100);
 
   return (
     <div className="w-full">
       {showLabel && (
         <div className="flex justify-between items-center mb-1.5">
-          <span className="text-xs font-bold" style={{ color: "var(--color-primary)" }}>Level {whole}</span>
-          <span className="text-xs" style={{ color: "var(--color-faint)" }}>{pct}%</span>
+          <span className="text-[12.5px] font-medium num" style={{ color: "var(--color-ink)" }}>
+            Level {whole}
+          </span>
+          <span className="text-[11.5px] num" style={{ color: "var(--color-faint)" }}>{pct}%</span>
         </div>
       )}
-      <div
-        className="w-full rounded-full overflow-hidden"
-        style={{ height, background: "var(--color-border)" }}
-      >
+      <div className="w-full overflow-hidden" style={{ height, background: "var(--color-border)" }}>
         <div
-          className="h-full rounded-full transition-[width] duration-700 ease-out relative"
-          style={{
-            width: `${pct}%`,
-            background: "linear-gradient(90deg, var(--color-primary), var(--color-purple))",
-          }}
-        >
-          <div
-            className="absolute inset-0 rounded-full opacity-30"
-            style={{
-              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
-              backgroundSize: "200% 100%",
-              animation: "progress-shine 2s infinite",
-            }}
-          />
-        </div>
+          className="h-full transition-[width] duration-500 ease-out"
+          style={{ width: `${pct}%`, background: "var(--color-primary)" }}
+        />
       </div>
     </div>
   );
@@ -49,46 +36,35 @@ export function BigLevel({ level }: { level: number }) {
 
   return (
     <div
-      className="flex flex-col items-center gap-3 px-4 py-4 rounded-2xl border h-full justify-center"
+      className="flex flex-col items-center gap-3 px-5 py-5 h-full justify-center"
       style={{
-        background: "linear-gradient(180deg, var(--color-card-hi), var(--color-card))",
-        borderColor: "var(--color-border)",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 4,
       }}
     >
       <div className="flex flex-col items-center gap-0.5">
         <div
-          className="text-3xl md:text-4xl font-black leading-none"
-          style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+          className="text-[36px] font-semibold leading-none tracking-tight num"
+          style={{ color: "var(--color-ink)" }}
         >
           {whole}
         </div>
-        <div className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: "var(--color-faint)" }}>
+        <div className="text-[11.5px] font-medium" style={{ color: "var(--color-faint)" }}>
           Level
         </div>
       </div>
 
-      <div className="w-full px-1">
-        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-border)" }}>
+      <div className="w-full">
+        <div className="w-full h-0.5 overflow-hidden" style={{ background: "var(--color-border)" }}>
           <div
-            className="h-full rounded-full transition-[width] duration-700 ease-out relative"
-            style={{
-              width: `${pct}%`,
-              background: "linear-gradient(90deg, var(--color-primary), var(--color-purple))",
-            }}
-          >
-            <div
-              className="absolute inset-0 rounded-full opacity-40"
-              style={{
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)",
-                backgroundSize: "200% 100%",
-                animation: "progress-shine 2s infinite",
-              }}
-            />
-          </div>
+            className="h-full transition-[width] duration-500 ease-out"
+            style={{ width: `${pct}%`, background: "var(--color-primary)" }}
+          />
         </div>
       </div>
 
-      <div className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
+      <div className="text-[12px]" style={{ color: "var(--color-muted)" }}>
         {pct}% to level {whole + 1}
       </div>
     </div>

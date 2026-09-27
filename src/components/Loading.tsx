@@ -2,11 +2,11 @@ export function Spinner({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size} height={size} viewBox="0 0 24 24" fill="none"
-      className="animate-spin text-primary"
+      className="animate-spin"
       style={{ color: "var(--color-primary)" }}
     >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.2" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.2" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -14,14 +14,21 @@ export function Spinner({ size = 20 }: { size?: number }) {
 export function FullPageSpinner() {
   return (
     <div className="flex-1 flex items-center justify-center">
-      <Spinner size={36} />
+      <Spinner size={28} />
     </div>
   );
 }
 
 export function SkeletonCard() {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3">
+    <div
+      className="p-4 flex flex-col gap-3"
+      style={{
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 4,
+      }}
+    >
       <div className="flex items-center gap-3">
         <div className="skeleton w-12 h-12 rounded-full" />
         <div className="flex-1 flex flex-col gap-2">

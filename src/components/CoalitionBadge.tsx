@@ -8,15 +8,17 @@ interface Props {
 export function CoalitionBadge({ coalition, size = "md" }: Props) {
   if (!coalition) return null;
 
-  const px = { sm: "px-2 py-0.5 text-[11px]", md: "px-2.5 py-1 text-xs", lg: "px-3 py-1.5 text-sm" }[size];
+  const px = { sm: "px-2 py-0.5 text-[11px]", md: "px-2.5 py-1 text-[11px]", lg: "px-2.5 py-1 text-[12px]" }[size];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${px}`}
+      className={`inline-flex items-center gap-1.5 font-medium coalition-fg coalition-tick ${px}`}
       style={{
-        background: `${coalition.color}22`,
-        color:       coalition.color,
-        border:     `1px solid ${coalition.color}44`,
+        ["--coalition" as any]: coalition.color,
+        border: `1px solid color-mix(in srgb, ${coalition.color} 28%, var(--color-border))`,
+        borderRadius: 3,
+        fontFamily: "var(--font-mono)",
+        background: "var(--color-surface)",
       }}
     >
       {coalition.image_url && (
@@ -30,5 +32,10 @@ export function CoalitionBadge({ coalition, size = "md" }: Props) {
 /** Thin color bar used on student cards */
 export function CoalitionStripe({ color }: { color?: string }) {
   if (!color) return null;
-  return <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl" style={{ background: color }} />;
+  return (
+    <div
+      className="absolute inset-x-0 top-0"
+      style={{ height: 2, background: color }}
+    />
+  );
 }

@@ -246,37 +246,38 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
   const hasFilters = Boolean(search || campusId !== primaryCampusId || cursusId || kickoff || levelMin > 0 || levelMax < 21 || onlineOnly);
 
   return (
-    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-5">
+    <div className="p-5 md:p-8 max-w-6xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
-          &gt; STUDENTS_BROWSER
+      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+        <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+          Students
         </h1>
         {total > 0 && (
-          <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+          <span className="text-[12px] num" style={{ color: "var(--color-faint)" }}>
             {total.toLocaleString()} students
           </span>
         )}
       </div>
+      <p className="text-[13.5px] mb-6" style={{ color: "var(--color-muted)" }}>
+        Browse the network by campus, cursus, kickoff, and level.
+      </p>
 
-      {/* Filter panel */}
-      <div className="rounded-2xl border p-4 md:p-5 space-y-4" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
+      {/* Filter panel — quiet surface */}
+      <div
+        className="rounded-md border p-4 md:p-5 space-y-4 mb-6"
+        style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
+      >
         {/* Search */}
         <div className="flex gap-3 flex-wrap">
           <input
             type="text"
             value={search}
             onChange={e => handleSearch(e.target.value)}
-            placeholder="◈  Search by login, first or last name..."
+            placeholder="Search by login, first or last name…"
             className="flex-1 min-w-[140px]"
-            style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
           />
           {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap"
-              style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
-            >
+            <button onClick={clearFilters} className="btn-secondary whitespace-nowrap">
               Clear filters
             </button>
           )}
@@ -285,31 +286,31 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         {/* Dropdowns */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           <div>
-            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Campus</label>
-            <select value={campusId} onChange={e => handleCampus(e.target.value)} className="w-full text-xs">
+            <label className="label block mb-1.5">Campus</label>
+            <select value={campusId} onChange={e => handleCampus(e.target.value)} className="w-full text-[13px]">
               <option value="">All campuses</option>
               {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Cursus</label>
-            <select value={cursusId} onChange={e => handleCursus(e.target.value)} className="w-full text-xs">
+            <label className="label block mb-1.5">Cursus</label>
+            <select value={cursusId} onChange={e => handleCursus(e.target.value)} className="w-full text-[13px]">
               <option value="">All cursus</option>
               {cursuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Sort by</label>
-            <select value={sort} onChange={e => handleSort(e.target.value)} className="w-full text-xs">
+            <label className="label block mb-1.5">Sort by</label>
+            <select value={sort} onChange={e => handleSort(e.target.value)} className="w-full text-[13px]">
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Kickoff</label>
+            <label className="label block mb-1.5">Kickoff</label>
             <select
               value={kickoff}
               onChange={e => handleKickoff(e.target.value)}
-              className="w-full text-xs"
+              className="w-full text-[13px]"
             >
               <option value="">All kickoffs</option>
               {kickoffOptions.map(month => (
@@ -318,15 +319,12 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
             </select>
           </div>
           <div>
-            <label className="block text-xs md:text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>Status</label>
+            <label className="label block mb-1.5">Status</label>
             <button
               onClick={() => handleOnline(!onlineOnly)}
-              className="w-full py-2 px-3 rounded-lg border text-xs font-semibold text-left transition-all"
-              style={onlineOnly
-                ? { background: "color-mix(in srgb, var(--color-green) 12%, transparent)", borderColor: "var(--color-green)", color: "var(--color-green)" }
-                : { borderColor: "var(--color-border)", color: "var(--color-faint)" }}
+              className={onlineOnly ? "badge badge-ok w-full justify-center" : "btn-secondary w-full"}
             >
-              {onlineOnly ? "● Online only" : "○ Show all"}
+              {onlineOnly ? "Online only" : "Show all"}
             </button>
           </div>
         </div>
@@ -334,19 +332,19 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
         {/* Level range */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs md:text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-faint)" }}>Level range</label>
-            <span className="text-xs font-mono" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
+            <label className="label">Level range</label>
+            <span className="text-[12px] data-mono" style={{ color: "var(--color-primary)" }}>
               {levelMin} – {levelMax}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs md:text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Min</div>
+              <div className="text-[11.5px] mb-1" style={{ color: "var(--color-faint)" }}>Min</div>
               <input type="range" min={0} max={21} step={0.5} value={levelMin}
                 onChange={e => handleLevelMin(Math.min(Number(e.target.value), levelMax))} />
             </div>
             <div>
-              <div className="text-xs md:text-[10px] mb-1" style={{ color: "var(--color-faint)" }}>Max</div>
+              <div className="text-[11.5px] mb-1" style={{ color: "var(--color-faint)" }}>Max</div>
               <input type="range" min={0} max={21} step={0.5} value={levelMax}
                 onChange={e => handleLevelMax(Math.max(Number(e.target.value), levelMin))} />
             </div>
@@ -363,12 +361,10 @@ export function StudentsPage({ onNavigate }: { onNavigate: (page: any, extra?: s
           {Array.from({ length: PAGE_SIZE }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : displayedStudents.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◈</div>
-          <div className="text-sm" style={{ color: "var(--color-faint)" }}>No students found</div>
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <div className="text-[13px]" style={{ color: "var(--color-faint)" }}>No students found</div>
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs px-4 py-2 rounded-lg border transition-all"
-              style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}>
+            <button onClick={clearFilters} className="btn-secondary">
               Clear all filters
             </button>
           )}

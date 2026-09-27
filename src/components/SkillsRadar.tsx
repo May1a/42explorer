@@ -7,7 +7,7 @@ interface Props {
 
 export function SkillsRadar({ skills, size = 260 }: Props) {
   if (!skills.length) {
-    return <div className="text-muted text-sm text-center py-8">No skills data</div>;
+    return <div className="text-sm text-center py-8" style={{ color: "var(--color-faint)" }}>No skills data</div>;
   }
 
   // Take top 8 skills by level
@@ -71,14 +71,14 @@ export function SkillsRadar({ skills, size = 260 }: Props) {
         <polygon
           points={polyPoints}
           className="radar-polygon radar-polygon-stroke"
-          strokeWidth="2"
+          strokeWidth="1.75"
         />
 
         {/* Data dots */}
         {dataPoints.map((pt, i) => (
           <circle
             key={i}
-            cx={pt.x} cy={pt.y} r="3"
+            cx={pt.x} cy={pt.y} r="2.5"
             fill="var(--color-primary)"
           />
         ))}
@@ -94,7 +94,8 @@ export function SkillsRadar({ skills, size = 260 }: Props) {
               textAnchor="middle"
               dominantBaseline="middle"
               fontSize="10"
-              fill="var(--color-muted)"
+              fill="var(--color-faint)"
+              fontFamily="var(--font-mono)"
             >
               {skill.name.length > 14 ? skill.name.slice(0, 13) + "…" : skill.name}
             </text>
@@ -105,9 +106,9 @@ export function SkillsRadar({ skills, size = 260 }: Props) {
       {/* Legend */}
       <div className="w-full grid grid-cols-2 gap-1">
         {top.map(skill => (
-          <div key={skill.id} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
-            <span className="text-muted truncate">{skill.name}</span>
-            <span className="text-primary font-mono font-semibold shrink-0">
+          <div key={skill.id} className="flex items-center justify-between gap-2 text-[12px]">
+            <span className="truncate" style={{ color: "var(--color-muted)" }}>{skill.name}</span>
+            <span className="num font-medium shrink-0" style={{ color: "var(--color-primary)" }}>
               {skill.level.toFixed(2)}
             </span>
           </div>

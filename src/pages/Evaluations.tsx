@@ -18,47 +18,55 @@ export function EvaluationsPage() {
   const error = tab === "as_corrected" ? corrByErr : corrForErr;
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
-          &gt; EVALUATIONS_
+    <div className="p-5 md:p-8 max-w-4xl mx-auto">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+        <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+          Evaluations
         </h1>
-        <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+        <span className="text-[12px] num" style={{ color: "var(--color-faint)" }}>
           {items?.length ?? 0} evaluations
         </span>
       </div>
+      <p className="text-[13.5px] mb-5" style={{ color: "var(--color-muted)" }}>
+        Scales you owe and scales you give.
+      </p>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-5">
         {(["as_corrected", "as_corrector"] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all"
-            style={{
-              background: tab === t ? "var(--color-primary)" : "var(--color-card-hi)",
-              color: tab === t ? "#000" : "var(--color-muted)",
-            }}
+            className="text-[12.5px] font-medium px-3 py-1.5 rounded-md transition-colors"
+            style={
+              tab === t
+                ? { background: "var(--color-primary)", color: "#FBF8F3" }
+                : {
+                    background: "var(--color-surface)",
+                    color: "var(--color-muted)",
+                    border: "1px solid var(--color-border)",
+                  }
+            }
           >
-            {t === "as_corrected" ? "To Be Evaluated" : "I'm Evaluating"}
+            {t === "as_corrected" ? "To be evaluated" : "I'm evaluating"}
           </button>
         ))}
       </div>
 
       {loading && (
         <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="skeleton h-16 w-full rounded-xl" />)}
+          {[1,2,3].map(i => <div key={i} className="skeleton h-14 w-full" />)}
         </div>
       )}
 
       {error && <InsufficientScopeCard error={error} />}
 
       {!loading && !error && !items?.length && (
-        <p className="text-xs text-center py-12" style={{ color: "var(--color-faint)" }}>
+        <p className="text-[13px] text-center py-12" style={{ color: "var(--color-faint)" }}>
           No evaluations found
         </p>
       )}
 
-      <div className="space-y-2">
+      <div style={{ borderTop: "1px solid var(--color-border)" }}>
         {(items ?? []).map(ev => (
           <EvalCard key={ev.id} eval={ev} />
         ))}
@@ -74,38 +82,36 @@ function EvalCard({ eval: ev }: { eval: ScaleTeam }) {
 
   return (
     <div
-      className="rounded-xl border p-3 md:p-4"
-      style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+      className="px-1 py-3"
+      style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
+              className="badge"
               style={{
                 color: filled ? "var(--color-green)" : "var(--color-yellow)",
-                background: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 12%, transparent)`,
+                borderColor: `color-mix(in srgb, ${filled ? "var(--color-green)" : "var(--color-yellow)"} 30%, var(--color-border))`,
               }}
             >
               {filled ? "Filled" : "Pending"}
             </span>
-            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ color: "var(--color-faint)", background: "var(--color-card-hi)" }}>
-              {kind}
-            </span>
+            <span className="badge">{kind}</span>
           </div>
 
-          <div className="text-sm font-semibold text-[#e2e8f0] mt-1.5">
+          <div className="text-[14px] font-medium mt-2" style={{ color: "var(--color-ink)" }}>
             {ev.scale?.name ?? `Scale #${ev.scale_id}`}
           </div>
-          <div className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
+          <div className="text-[12.5px] mt-0.5" style={{ color: "var(--color-muted)" }}>
             {ev.team?.name ?? `Team #${ev.team?.id}`}
             {ev.team?.project_id ? ` · Project #${ev.team.project_id}` : ""}
           </div>
 
           {ev.correcteds?.length > 0 && (
-            <div className="flex items-center gap-1 mt-1.5">
+            <div className="flex items-center gap-2 mt-1.5">
               {ev.correcteds.map(c => (
-                <span key={c.id} className="text-[10px] font-mono" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+                <span key={c.id} className="text-[11.5px] data-mono" style={{ color: "var(--color-faint)" }}>
                   {c.login}
                 </span>
               ))}
@@ -115,15 +121,15 @@ function EvalCard({ eval: ev }: { eval: ScaleTeam }) {
 
         <div className="text-right shrink-0">
           {mark != null && (
-            <div className="text-lg font-black" style={{ fontFamily: "var(--font-mono)", color: mark >= 50 ? "var(--color-green)" : "var(--color-red)" }}>
+            <div className="text-[18px] font-medium num" style={{ color: mark >= 50 ? "var(--color-green)" : "var(--color-red)" }}>
               {mark}
             </div>
           )}
-          <div className="text-[10px]" style={{ color: "var(--color-faint)" }}>
+          <div className="text-[11.5px]" style={{ color: "var(--color-faint)" }}>
             {new Date(ev.begin_at).toLocaleDateString()}
           </div>
           {ev.filled_at && (
-            <div className="text-[10px]" style={{ color: "var(--color-faint)" }}>
+            <div className="text-[11px]" style={{ color: "var(--color-faint)" }}>
               filled {new Date(ev.filled_at).toLocaleDateString()}
             </div>
           )}
@@ -132,7 +138,7 @@ function EvalCard({ eval: ev }: { eval: ScaleTeam }) {
 
       {ev.comment && (
         <div
-          className="mt-2 text-xs p-2 rounded-lg"
+          className="mt-2 text-[12.5px] p-2.5 rounded-md"
           style={{ background: "var(--color-card-hi)", color: "var(--color-muted)" }}
         >
           {ev.comment.length > 200 ? ev.comment.slice(0, 200) + "…" : ev.comment}

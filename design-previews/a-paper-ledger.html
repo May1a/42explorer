@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A · Paper Ledger — 42 Explorer preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F4F2ED;
+    --surface: #FBFAF7;
+    --card: #FFFFFF;
+    --text: #1C1B18;
+    --text-2: #5C5850;
+    --text-3: #8A857A;
+    --border: #E2DED4;
+    --hairline: #EDE9E0;
+    --accent: #1A56DB;
+    --accent-hover: #1E429F;
+    --accent-soft: rgba(26, 86, 219, 0.08);
+    --success: #157F3C;
+    --warning: #B45309;
+    --danger: #C2410C;
+    --coalition: #3B82F6;
+    --r: 5px;
+    --font: "Instrument Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .side {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 20px 16px 16px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: var(--r);
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 600; font-size: 14px; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .nav { padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--r);
+    color: var(--text-2); font-size: 13.5px; font-weight: 500;
+    text-decoration: none; position: relative;
+  }
+  .nav-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+  .nav-item:hover { background: var(--hairline); color: var(--text); }
+  .nav-item.active {
+    background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  }
+  .nav-item.active::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 2px; background: var(--accent); border-radius: 1px;
+  }
+  .side-foot { padding: 12px; border-top: 1px solid var(--border); }
+  .me {
+    display: flex; align-items: center; gap: 10px; padding: 8px;
+    border-radius: var(--r); text-decoration: none; color: inherit;
+  }
+  .me:hover { background: var(--hairline); }
+  .avatar {
+    width: 32px; height: 32px; border-radius: var(--r);
+    object-fit: cover; background: var(--border);
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+  }
+  .me-name { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
+  .me-meta { font-size: 11px; color: var(--text-3); }
+
+  /* ── Main ── */
+  .main { flex: 1; overflow-y: auto; }
+  .page { max-width: 960px; margin: 0 auto; padding: 28px 32px 48px; }
+  .page-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 22px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .page-meta { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+
+  /* Profile strip */
+  .profile {
+    display: flex; gap: 18px; align-items: flex-start;
+    padding-bottom: 22px; margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .profile-photo {
+    width: 64px; height: 64px; border-radius: var(--r);
+    background: linear-gradient(145deg, #d4cfc4, #b8b2a4);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 600; color: var(--text-2); font-size: 18px;
+  }
+  .profile-body { flex: 1; min-width: 0; }
+  .profile-name { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .profile-login { font-family: var(--mono); font-size: 13px; color: var(--accent); margin-top: 2px; }
+  .profile-title { font-size: 13px; color: var(--text-2); font-style: italic; margin-top: 4px; }
+  .profile-tags { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .tag {
+    font-size: 11.5px; font-weight: 500; padding: 3px 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--card); color: var(--text-2);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tag.coalition {
+    border-color: color-mix(in srgb, var(--coalition) 35%, var(--border));
+    color: var(--coalition);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+  .tag.online { border-color: color-mix(in srgb, var(--success) 35%, var(--border)); color: var(--success); }
+
+  /* Level */
+  .level-wrap { margin-top: 14px; max-width: 280px; }
+  .level-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px; font-size: 12px;
+  }
+  .level-head strong { color: var(--text); font-weight: 600; }
+  .level-head span { font-family: var(--mono); color: var(--text-3); }
+  .level-track {
+    height: 3px; background: var(--hairline); border-radius: 2px; overflow: hidden;
+  }
+  .level-fill { height: 100%; width: 37%; background: var(--accent); }
+
+  /* Stats — typographic columns on a rule */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .stat { padding: 18px 0 18px 0; }
+  .stat + .stat { padding-left: 20px; border-left: 1px solid var(--hairline); }
+  .stat:not(:first-child) { padding-left: 20px; }
+  .stat-value {
+    font-family: var(--mono); font-size: 24px; font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1.1;
+  }
+  .stat-label {
+    font-size: 11.5px; color: var(--text-3); margin-top: 6px; font-weight: 500;
+  }
+
+  /* Section */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 12px; font-weight: 600; color: var(--text-2);
+    letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .section-title a { color: var(--accent); text-decoration: none; font-weight: 500; float: right; font-size: 12px; }
+  .section-title a:hover { text-decoration: underline; }
+
+  /* Ruled list */
+  .list { border-top: 1px solid var(--border); }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .row:hover { background: var(--surface); }
+  .row-av {
+    width: 28px; height: 28px; border-radius: 4px;
+    background: var(--hairline); display: grid; place-items: center;
+    font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text-3);
+    flex-shrink: 0;
+  }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .row-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .row-meta { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .row-right { font-family: var(--mono); font-size: 12.5px; color: var(--text-2); text-align: right; min-width: 56px; }
+
+  /* Online count bar */
+  .pulse-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; background: var(--card);
+    border: 1px solid var(--border); border-radius: var(--r);
+    margin-bottom: 4px;
+  }
+  .pulse-num { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--success); }
+  .pulse-label { font-size: 13px; color: var(--text-2); }
+
+  .hint {
+    position: fixed; right: 16px; bottom: 16px;
+    font-size: 11px; color: var(--text-3);
+    background: var(--card); border: 1px solid var(--border);
+    padding: 6px 10px; border-radius: 4px;
+  }
+  .hint a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-mark">42</div>
+      <div>
+        <div class="brand-name">Explorer</div>
+        <div class="brand-sub">Heilbronn</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" href="#">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Students
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Projects
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Evaluations
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Events
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Slots
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        PeerFinder
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+    <div class="side-foot">
+      <a class="me" href="#">
+        <div class="avatar">mg</div>
+        <div>
+          <div class="me-name">magrass</div>
+          <div class="me-meta">Lv 14.37</div>
+        </div>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page">
+      <div class="page-head">
+        <h1>Dashboard</h1>
+        <div class="page-meta">Thu 26 Sep · 22:14</div>
+      </div>
+
+      <div class="profile" style="--coalition:#3B82F6">
+        <div class="profile-photo">mg</div>
+        <div class="profile-body">
+          <div class="profile-name">Marc Grasser</div>
+          <div class="profile-login">@magrass</div>
+          <div class="profile-title">“The one who %login”</div>
+          <div class="profile-tags">
+            <span class="tag coalition">Federation</span>
+            <span class="tag online"><span class="dot"></span> e3r5p12</span>
+            <span class="tag">Heilbronn · 42cursus</span>
+          </div>
+          <div class="level-wrap">
+            <div class="level-head"><strong>Level 14</strong><span>37%</span></div>
+            <div class="level-track"><div class="level-fill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Correction points</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">₿ 3,240</div>
+          <div class="stat-label">Wallet</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">18/24</div>
+          <div class="stat-label">Projects validated</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">31</div>
+          <div class="stat-label">Achievements</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Campus pulse <a href="#">PeerFinder →</a></div>
+        <div class="pulse-bar">
+          <div class="pulse-num">47</div>
+          <div class="pulse-label">students online at Heilbronn</div>
+        </div>
+        <div class="list">
+          <div class="row">
+            <div class="row-av">jl</div>
+            <div class="row-main">
+              <div class="row-name">jlee</div>
+              <div class="row-sub">Jia Lee</div>
+            </div>
+            <div class="row-meta">e1r2p3</div>
+            <div class="row-right">Lv 19.02</div>
+          </div>
+          <div class="row">
+            <div class="row-av">sm</div>
+            <div class="row-main">
+              <div class="row-name">smueller</div>
+              <div class="row-sub">Sofia Müller</div>
+            </div>
+            <div class="row-meta">e2r1p1</div>
+            <div class="row-right">Lv 21.00</div>
+          </div>
+          <div class="row">
+            <div class="row-av">ak</div>
+            <div class="row-main">
+              <div class="row-name">akhan</div>
+              <div class="row-sub">Amira Khan</div>
+            </div>
+            <div class="row-meta">e1r4p8</div>
+            <div class="row-right">Lv 16.44</div>
+          </div>
+          <div class="row">
+            <div class="row-av">tr</div>
+            <div class="row-main">
+              <div class="row-name">troth</div>
+              <div class="row-sub">Tim Roth</div>
+            </div>
+            <div class="row-meta">e3r2p5</div>
+            <div class="row-right">Lv 11.80</div>
+          </div>
+          <div class="row">
+            <div class="row-av">nb</div>
+            <div class="row-main">
+              <div class="row-name">nberg</div>
+              <div class="row-sub">Noa Berg</div>
+            </div>
+            <div class="row-meta">e2r3p9</div>
+            <div class="row-right">Lv 08.15</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Current projects</div>
+        <div class="list">
+          <div class="row">
+            <div class="row-main">
+              <div class="row-name">cub3d</div>
+              <div class="row-sub">waiting for correction</div>
+            </div>
+            <div class="row-right">—</div>
+          </div>
+          <div class="row">
+            <div class="row-main">
+              <div class="row-name">minishell</div>
+              <div class="row-sub">in progress · group of 2</div>
+            </div>
+            <div class="row-right">—</div>
+          </div>
+          <div class="row">
+            <div class="row-main">
+              <div class="row-name">libft</div>
+              <div class="row-sub">finished · 14 Sep</div>
+            </div>
+            <div class="row-right" style="color:var(--success)">125</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="hint">Preview A · Paper Ledger · <a href="index.html">compare all</a></div>
+</body>
+</html>

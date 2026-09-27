@@ -4,11 +4,14 @@ export function APIErrorCard({ status, redirectReason }: { status?: number; redi
   if (status === 429) {
     return (
       <div
-        className="rounded-xl border p-4 md:p-5"
-        style={{ background: "var(--color-card)", borderColor: "var(--color-yellow)" }}
+        className="rounded-md border p-4 md:p-5"
+        style={{
+          background: "var(--color-surface)",
+          borderColor: "color-mix(in srgb, var(--color-yellow) 35%, var(--color-border))",
+        }}
       >
-        <div className="text-sm font-bold" style={{ color: "var(--color-yellow)" }}>Rate Limited</div>
-        <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>
+        <div className="text-sm font-semibold" style={{ color: "var(--color-yellow)" }}>Rate limited</div>
+        <div className="text-[13px] mt-1" style={{ color: "var(--color-muted)" }}>
           The 42 API is rate-limiting requests. Please wait a moment and try again.
         </div>
       </div>
@@ -17,13 +20,16 @@ export function APIErrorCard({ status, redirectReason }: { status?: number; redi
 
   return (
     <div
-      className="rounded-xl border p-4 md:p-5"
-      style={{ background: "var(--color-card)", borderColor: "var(--color-red)" }}
+      className="rounded-md border p-4 md:p-5"
+      style={{
+        background: "var(--color-surface)",
+        borderColor: "color-mix(in srgb, var(--color-red) 35%, var(--color-border))",
+      }}
     >
-      <div className="text-sm font-bold" style={{ color: "var(--color-red)" }}>
-        {status === 401 ? "Session Expired" : status === 403 ? "Access Denied" : status === 404 ? "Not Found" : `Error ${status ?? ""}`}
+      <div className="text-sm font-semibold" style={{ color: "var(--color-red)" }}>
+        {status === 401 ? "Session expired" : status === 403 ? "Access denied" : status === 404 ? "Not found" : `Error ${status ?? ""}`}
       </div>
-      <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>
+      <div className="text-[13px] mt-1" style={{ color: "var(--color-muted)" }}>
         {status === 401
           ? "Your session has expired. Please log in again."
           : status === 403
@@ -35,10 +41,9 @@ export function APIErrorCard({ status, redirectReason }: { status?: number; redi
       {redirectReason && (
         <button
           onClick={() => openOfficial(redirectReason)}
-          className="mt-2 text-xs font-semibold px-3 py-1 rounded-lg transition-all"
-          style={{ background: "var(--color-primary)", color: "#000" }}
+          className="mt-2 text-[12.5px] font-semibold px-3 py-1.5 rounded-md btn-primary"
         >
-          {redirectReasonLabel(redirectReason)} Open on 42 →
+          {redirectReasonLabel(redirectReason)} · Open on 42
         </button>
       )}
     </div>

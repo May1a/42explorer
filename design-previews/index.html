@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>42 Explorer — Design direction previews</title>
+<style>
+  :root {
+    --bg: #0E0E0E; --panel: #161616; --border: #2A2A2A;
+    --text: #EDEDED; --text-2: #9A9A9A; --text-3: #666;
+    --accent: #D8FF3E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    background: var(--panel); flex-shrink: 0;
+  }
+  h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .sub { font-size: 12px; color: var(--text-3); }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab {
+    appearance: none; border: 1px solid var(--border); background: transparent;
+    color: var(--text-2); font: inherit; font-size: 12.5px; font-weight: 500;
+    padding: 7px 14px; border-radius: 4px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    min-width: 140px;
+  }
+  .tab strong { font-size: 13px; color: inherit; font-weight: 600; }
+  .tab span { font-size: 10.5px; color: var(--text-3); }
+  .tab:hover { border-color: var(--text-3); color: var(--text); }
+  .tab.active {
+    background: var(--accent); border-color: var(--accent); color: #0A0A0A;
+  }
+  .tab.active span { color: rgba(0,0,0,0.55); }
+  .frame-wrap { flex: 1; position: relative; background: #fff; }
+  iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0; display: none; background: #fff;
+  }
+  iframe.active { display: block; }
+  footer {
+    padding: 10px 20px; border-top: 1px solid var(--border);
+    background: var(--panel); font-size: 12px; color: var(--text-3);
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  footer b { color: var(--text-2); font-weight: 600; }
+  kbd {
+    font-family: ui-monospace, monospace; font-size: 11px;
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 3px; color: var(--text-2);
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>42 Explorer — design directions</h1>
+    <div class="sub">Same dashboard content · three visual languages · pick one (or mix)</div>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-id="ab" role="tab">
+      <strong>AB · Warm Ledger</strong>
+      <span>A + quiet C · revised</span>
+    </button>
+    <button class="tab" data-id="a" role="tab">
+      <strong>A · Paper Ledger</strong>
+      <span>Light institutional</span>
+    </button>
+    <button class="tab" data-id="b" role="tab">
+      <strong>B · Campus Console</strong>
+      <span>Disciplined dark</span>
+    </button>
+    <button class="tab" data-id="c" role="tab">
+      <strong>C · Studio</strong>
+      <span>Warm identity</span>
+    </button>
+  </div>
+</header>
+
+<div class="frame-wrap">
+  <iframe id="frame-ab" class="active" src="ab-warm-ledger.html" title="AB Warm Ledger"></iframe>
+  <iframe id="frame-a" src="a-paper-ledger.html" title="A Paper Ledger"></iframe>
+  <iframe id="frame-b" src="b-campus-console.html" title="B Campus Console"></iframe>
+  <iframe id="frame-c" src="c-studio.html" title="C Studio"></iframe>
+</div>
+
+<footer>
+  <span><b>Keys</b> <kbd>1</kbd>–<kbd>4</kbd> switch · <kbd>←</kbd> <kbd>→</kbd> cycle</span>
+  <span><b>AB</b> warm paper · ruled lists · deep teal · Public Sans + Plex Mono</span>
+  <span><b>A</b> was too Tailwind · <b>C</b> was too loud · <b>AB</b> is the blend</span>
+</footer>
+
+<script>
+  const tabs = [...document.querySelectorAll(".tab")];
+  const frames = {
+    ab: document.getElementById("frame-ab"),
+    a: document.getElementById("frame-a"),
+    b: document.getElementById("frame-b"),
+    c: document.getElementById("frame-c"),
+  };
+  const order = ["ab", "a", "b", "c"];
+  let current = "ab";
+
+  function show(id) {
+    current = id;
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.id === id));
+    Object.entries(frames).forEach(([k, el]) => el.classList.toggle("active", k === id));
+  }
+
+  tabs.forEach(t => t.addEventListener("click", () => show(t.dataset.id)));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "1") show("ab");
+    if (e.key === "2") show("a");
+    if (e.key === "3") show("b");
+    if (e.key === "4") show("c");
+    if (e.key === "ArrowRight") show(order[(order.indexOf(current) + 1) % order.length]);
+    if (e.key === "ArrowLeft") show(order[(order.indexOf(current) + order.length - 1) % order.length]);
+  });
+</script>
+</body>
+</html>

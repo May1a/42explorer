@@ -25,17 +25,10 @@ function HostChip({ host }: { host: string }) {
   return (
     <button
       onClick={copy}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
-      style={{
-        background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
-        border: "1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)",
-        color: "var(--color-primary)",
-        fontFamily: "var(--font-mono)",
-      }}
+      className="badge"
       title="Click to copy"
     >
-      <span>◈</span>
-      {copied ? "✓ Copied!" : host}
+      {copied ? "Copied" : host}
     </button>
   );
 }
@@ -56,32 +49,27 @@ function LocationCard({
   return (
     <div
       onClick={onProfile}
-      className="relative flex flex-col gap-3 p-4 rounded-xl border cursor-pointer transition-all"
+      className="card-hover relative flex flex-col gap-3 p-4 rounded-md border cursor-pointer"
       style={{
-        background: "var(--color-card)",
+        background: "var(--color-surface)",
         borderColor: isMe ? "var(--color-purple)" : "var(--color-border)",
       }}
-      onMouseEnter={e =>
-        (e.currentTarget.style.borderColor = isMe ? "var(--color-purple)" : "var(--color-primary)")
-      }
-      onMouseLeave={e =>
-        (e.currentTarget.style.borderColor = isMe ? "var(--color-purple)" : "var(--color-border)")
-      }
     >
       {/* Online badge */}
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-green)" }}>
-          <span className="online-pulse" /> Online
+        <span className="badge badge-ok">
+          <span className="online-dot" />
+          Online
         </span>
         {isMe && (
           <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            className="badge"
             style={{
-              background: "color-mix(in srgb, var(--color-purple) 15%, transparent)",
               color: "var(--color-purple)",
+              borderColor: "color-mix(in srgb, var(--color-purple) 30%, var(--color-border))",
             }}
           >
-            YOU
+            You
           </span>
         )}
       </div>
@@ -91,17 +79,13 @@ function LocationCard({
         <img
           src={loc.user.image?.versions?.small ?? ""}
           alt={loc.user.login}
-          className="w-12 h-12 rounded-xl object-cover shrink-0"
-          style={{ border: `2px solid ${isMe ? "var(--color-purple)" : "var(--color-border-hi)"}` }}
+          className="w-12 h-12 rounded-full avatar-soft object-cover shrink-0"
         />
         <div className="flex-1 min-w-0">
-          <div
-            className="text-sm font-bold truncate"
-            style={{ color: "#e2e8f0", fontFamily: "var(--font-mono)" }}
-          >
+          <div className="text-[13px] font-medium data-mono truncate" style={{ color: "var(--color-ink)" }}>
             {loc.user.login}
           </div>
-          <div className="text-xs truncate" style={{ color: "var(--color-muted)" }}>
+          <div className="text-[12px] truncate" style={{ color: "var(--color-muted)" }}>
             {loc.user.displayname}
           </div>
         </div>
@@ -113,8 +97,8 @@ function LocationCard({
       </div>
 
       {/* Time online */}
-      <div className="text-xs" style={{ color: "var(--color-faint)" }}>
-        ⏱ {timeSince(loc.begin_at)} online
+      <div className="text-[12px] data-mono" style={{ color: "var(--color-faint)" }}>
+        {timeSince(loc.begin_at)} online
       </div>
 
       {/* Level */}
@@ -176,61 +160,41 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
   const selectedCampus = campuses.find(c => c.id === campusId);
 
   return (
-    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-5">
+    <div className="p-5 md:p-8 max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-base md:text-lg font-bold tracking-widest uppercase" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
-          &gt; PEERFINDER++_
+      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+        <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+          Peerfinder
         </h1>
-
-        {/* Auto-refresh toggle */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => refetch()}
-            className="text-xs px-3 py-1.5 rounded-lg border transition-all font-semibold"
-            style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
-          >
-            ↻ Refresh
+        <div className="flex items-center gap-2">
+          <button onClick={() => refetch()} className="btn-quiet text-[12.5px]">
+            Refresh
           </button>
           <button
             onClick={() => setAutoRefresh(v => !v)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all"
-            style={
-              autoRefresh
-                ? {
-                    background: "color-mix(in srgb, var(--color-green) 12%, transparent)",
-                    borderColor: "var(--color-green)",
-                    color: "var(--color-green)",
-                  }
-                : { borderColor: "var(--color-border)", color: "var(--color-faint)" }
-            }
+            className={autoRefresh ? "badge badge-ok" : "badge"}
           >
-            {autoRefresh ? (
-              <>
-                <span className="online-pulse" />
-                Auto {countdown}s
-              </>
-            ) : (
-              "○ Auto-refresh off"
-            )}
+            {autoRefresh && <span className="online-dot" />}
+            {autoRefresh ? `Auto ${countdown}s` : "Auto-refresh off"}
           </button>
         </div>
       </div>
+      <p className="text-[13.5px] mb-6" style={{ color: "var(--color-muted)" }}>
+        Who’s on the floor at your campus — live hosts and session time.
+      </p>
 
-      {/* Campus selector */}
+      {/* Campus selector — quiet filter bar */}
       <div
-        className="rounded-xl border p-4"
-        style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+        className="rounded-md border p-4 mb-6"
+        style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
       >
         <div className="flex items-start gap-4 flex-wrap">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Campus
-            </label>
+            <label className="label block mb-1.5">Campus</label>
             <select
               value={campusId ?? ""}
               onChange={e => setCampusId(Number(e.target.value))}
-              className="w-full text-sm"
+              className="w-full"
             >
               <option value="">Select a campus…</option>
               {campuses.map(c => (
@@ -239,40 +203,25 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--color-faint)" }}>
-              Search
-            </label>
+            <label className="label block mb-1.5">Search</label>
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="◈  Login, name, or host..."
-              className="w-full text-sm"
-              style={{ fontFamily: "var(--font-mono)" }}
+              placeholder="Login, name, or host…"
+              className="w-full"
             />
           </div>
 
-          {/* Online count badge */}
+          {/* Online count */}
           {locations && campusId && (
-            <div
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 w-full md:w-auto"
-              style={{
-                background: "color-mix(in srgb, var(--color-green) 8%, transparent)",
-                borderLeftColor: "var(--color-green)",
-              }}
-            >
-              <span className="online-pulse" />
-              <div>
-                <div
-                  className="text-xl font-black"
-                  style={{ color: "var(--color-green)", fontFamily: "var(--font-mono)" }}
-                >
-                  {filteredLocations?.length ?? 0}
-                </div>
-                <div className="text-xs" style={{ color: "var(--color-faint)" }}>
-                  online at {selectedCampus?.name}
-                </div>
-              </div>
+            <div className="flex items-baseline gap-2.5 self-end pb-1">
+              <span className="text-[22px] font-medium num" style={{ color: "var(--color-green)" }}>
+                {filteredLocations?.length ?? 0}
+              </span>
+              <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                online at {selectedCampus?.name}
+              </span>
             </div>
           )}
         </div>
@@ -280,24 +229,21 @@ export function LocationsPage({ onNavigate }: { onNavigate: (page: any, extra?: 
 
       {/* Grid */}
       {!campusId ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◎</div>
-          <div className="text-sm" style={{ color: "var(--color-faint)" }}>Select a campus to see who's online</div>
-        </div>
+        <p className="text-[13px] py-16 text-center" style={{ color: "var(--color-faint)" }}>
+          Select a campus to see who’s online
+        </p>
       ) : isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 20 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : !locations?.length ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <div className="text-4xl" style={{ color: "var(--color-faint)" }}>○</div>
-          <div className="text-sm" style={{ color: "var(--color-faint)" }}>No one online at {selectedCampus?.name} right now</div>
-        </div>
+        <p className="text-[13px] py-16 text-center" style={{ color: "var(--color-faint)" }}>
+          No one online at {selectedCampus?.name} right now
+        </p>
       ) : !filteredLocations?.length ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <div className="text-4xl" style={{ color: "var(--color-faint)" }}>○</div>
-          <div className="text-sm" style={{ color: "var(--color-faint)" }}>No online peers match your search</div>
-        </div>
+        <p className="text-[13px] py-16 text-center" style={{ color: "var(--color-faint)" }}>
+          No online peers match your search
+        </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {filteredLocations.map(loc => (

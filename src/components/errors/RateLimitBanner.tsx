@@ -19,10 +19,10 @@ export function RateLimitBanner() {
 
   return (
     <div
-      className="rounded-lg border px-3 py-2 text-xs text-center"
+      className="rounded-md border px-3 py-2 text-[12.5px] text-center"
       style={{
         background: "color-mix(in srgb, var(--color-yellow) 10%, transparent)",
-        borderColor: "var(--color-yellow)",
+        borderColor: "color-mix(in srgb, var(--color-yellow) 35%, var(--color-border))",
         color: "var(--color-yellow)",
       }}
     >

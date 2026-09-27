@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { use42Query } from "../hooks/use42API";
 import { useAuth } from "../context/AuthContext";
-import { BigLevel } from "../components/LevelBar";
+import { LevelBar } from "../components/LevelBar";
 import { CoalitionBadge } from "../components/CoalitionBadge";
 import { SkillsRadar } from "../components/SkillsRadar";
 import { FullPageSpinner } from "../components/Loading";
@@ -12,13 +12,13 @@ import type { FortyTwoUser, ProjectUser, Achievement } from "../types";
 type Tab = "projects" | "timeline" | "skills" | "achievements" | "evaluations";
 type ProjectView = "table" | "timeline";
 
-const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  finished:             { label: "Finished",    color: "var(--color-green)",  bg: "color-mix(in srgb, var(--color-green) 12%, transparent)" },
-  in_progress:          { label: "In progress", color: "var(--color-yellow)", bg: "color-mix(in srgb, var(--color-yellow) 12%, transparent)" },
-  searching_a_group:    { label: "Searching",   color: "var(--color-yellow)", bg: "color-mix(in srgb, var(--color-yellow) 12%, transparent)" },
-  creating_group:       { label: "Grouping",    color: "var(--color-yellow)", bg: "color-mix(in srgb, var(--color-yellow) 12%, transparent)" },
-  waiting_for_correction: { label: "Waiting",   color: "var(--color-primary)", bg: "color-mix(in srgb, var(--color-primary) 12%, transparent)" },
-  parent:               { label: "—",           color: "var(--color-faint)",  bg: "var(--color-card-hi)" },
+const STATUS_STYLE: Record<string, { label: string; color: string }> = {
+  finished:               { label: "Finished",    color: "var(--color-green)" },
+  in_progress:            { label: "In progress", color: "var(--color-primary)" },
+  searching_a_group:      { label: "Searching",   color: "var(--color-yellow)" },
+  creating_group:         { label: "Grouping",    color: "var(--color-yellow)" },
+  waiting_for_correction: { label: "Waiting",     color: "var(--color-purple)" },
+  parent:                 { label: "—",           color: "var(--color-faint)" },
 };
 
 const TIER_COLOR: Record<string, string> = {
@@ -29,38 +29,46 @@ const TIER_COLOR: Record<string, string> = {
   bonus:     "var(--color-faint)",
 };
 
+function StatusBadge({ status, validated }: { status: string; validated?: boolean | null }) {
+  const s = STATUS_STYLE[status] ?? { label: status, color: "var(--color-muted)" };
+  return (
+    <span className="badge" style={{ color: s.color }}>
+      {validated === true && (
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      )}
+      {validated === false && (
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      )}
+      {s.label}
+    </span>
+  );
+}
+
 function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
   const sorted = [...projects].sort((a, b) =>
     new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
 
   return (
-    <div className="overflow-x-auto rounded-2xl border animate-fade-in" style={{ borderColor: "var(--color-border)", background: "var(--color-card)" }}>
+    <div className="overflow-x-auto animate-fade-in" style={{ borderTop: "1px solid var(--color-border)" }}>
       <table className="w-full text-xs md:text-sm">
         <thead>
-          <tr style={{ background: "var(--color-surface)" }}>
-            <th className="text-left p-3 md:p-4 font-semibold rounded-tl-2xl">Project</th>
-            <th className="text-left p-3 md:p-4 font-semibold">Status</th>
-            <th className="text-left p-3 md:p-4 font-semibold">Grade</th>
-            <th className="text-left p-3 md:p-4 font-semibold rounded-tr-2xl">Date</th>
+          <tr>
+            <th>Project</th>
+            <th>Status</th>
+            <th>Grade</th>
+            <th>Date</th>
           </tr>
         </thead>
         <tbody>
-          {sorted.map((p, i) => {
+          {sorted.map(p => {
             const validated = p["validated?"];
-            const status    = STATUS_STYLE[p.status] ?? { label: p.status, color: "var(--color-muted)", bg: "var(--color-card-hi)" };
             return (
-              <tr
-                key={p.id}
-                className="group transition-colors"
-                style={{ background: i % 2 === 0 ? "var(--color-card)" : "color-mix(in srgb, var(--color-card-hi) 30%, var(--color-card))" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--color-card-hi)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? "var(--color-card)" : "color-mix(in srgb, var(--color-card-hi) 30%, var(--color-card))"; }}
-              >
-                <td className="p-3 md:p-4">
+              <tr key={p.id} className="transition-colors">
+                <td>
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      className="status-dot"
                       style={{
                         background: validated === true
                           ? "var(--color-green)"
@@ -69,39 +77,22 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
                           : "var(--color-yellow)",
                       }}
                     />
-                    <div className="font-semibold text-xs" style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}>
+                    <div className="data-mono font-medium" style={{ color: "var(--color-ink)" }}>
                       {p.project.name}
                     </div>
                   </div>
                   {p.project.exam && (
-                    <span
-                      className="text-[10px] px-1.5 py-0.5 rounded mt-1 inline-block"
-                      style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}
-                    >
-                      exam
-                    </span>
+                    <span className="badge mt-1">exam</span>
                   )}
                 </td>
-                <td className="p-3 md:p-4">
-                  <span
-                    className="inline-flex items-center gap-1 text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ color: status.color, background: status.bg }}
-                  >
-                    {validated === true && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    )}
-                    {validated === false && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    )}
-                    {status.label}
-                  </span>
+                <td>
+                  <StatusBadge status={p.status} validated={validated} />
                 </td>
-                <td className="p-3 md:p-4">
+                <td>
                   {p.final_mark !== null ? (
                     <span
-                      className="text-xs md:text-sm font-bold"
+                      className="num text-[13px] font-medium"
                       style={{
-                        fontFamily: "var(--font-mono)",
                         color:
                           validated === true
                             ? "var(--color-green)"
@@ -116,8 +107,8 @@ function ProjectsTab({ projects }: { projects: ProjectUser[] }) {
                     <span style={{ color: "var(--color-faint)" }}>—</span>
                   )}
                 </td>
-                <td className="p-3 md:p-4">
-                  <span className="text-xs" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+                <td>
+                  <span className="data-mono text-[12px]" style={{ color: "var(--color-faint)" }}>
                     {p.marked_at ? new Date(p.marked_at).toLocaleDateString() : "—"}
                   </span>
                 </td>
@@ -137,7 +128,7 @@ function ProjectTimeline({ projects }: { projects: ProjectUser[] }) {
 
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-8 text-sm" style={{ color: "var(--color-faint)" }}>
+      <div className="text-center py-8 text-[13px]" style={{ color: "var(--color-faint)" }}>
         No marked projects yet
       </div>
     );
@@ -147,12 +138,11 @@ function ProjectTimeline({ projects }: { projects: ProjectUser[] }) {
     <div className="animate-fade-in">
       <div className="relative pl-6 ml-2">
         <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: "var(--color-border)" }} />
-        {sorted.map((p, i) => {
+        {sorted.map(p => {
           const validated = p["validated?"];
-          const status = STATUS_STYLE[p.status] ?? { label: p.status, color: "var(--color-muted)", bg: "var(--color-card-hi)" };
           const date = new Date(p.marked_at!);
           return (
-            <div key={p.id} className="relative pb-5 last:pb-0" style={{ animationDelay: `${i * 0.04}s` }}>
+            <div key={p.id} className="relative pb-5 last:pb-0">
               <div
                 className="absolute -left-[22px] top-1.5 w-[9px] h-[9px] rounded-full border-2"
                 style={{
@@ -160,33 +150,29 @@ function ProjectTimeline({ projects }: { projects: ProjectUser[] }) {
                   borderColor: "var(--color-bg)",
                 }}
               />
-              <div className="text-[10px] font-bold mb-1" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+              <div className="data-mono text-[11.5px] mb-1" style={{ color: "var(--color-faint)" }}>
                 {date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
               </div>
-              <div
-                className="rounded-xl border p-3"
-                style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-              >
+              <div className="section-card p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-[#e2e8f0]">{p.project.name}</div>
+                    <div className="text-[13.5px] font-medium" style={{ color: "var(--color-ink)" }}>
+                      {p.project.name}
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
-                        style={{ color: status.color, background: status.bg }}
-                      >
-                        {status.label}
-                      </span>
-                      <span className="text-[10px]" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+                      <StatusBadge status={p.status} validated={validated} />
+                      <span className="data-mono text-[11.5px]" style={{ color: "var(--color-faint)" }}>
                         attempt #{p.occurrence}
                       </span>
                     </div>
                   </div>
                   {p.final_mark != null && (
-                    <div className="text-lg font-black shrink-0" style={{
-                      fontFamily: "var(--font-mono)",
-                      color: validated === true ? "var(--color-green)" : validated === false ? "var(--color-red)" : "var(--color-muted)",
-                    }}>
+                    <div
+                      className="num text-[16px] font-medium shrink-0"
+                      style={{
+                        color: validated === true ? "var(--color-green)" : validated === false ? "var(--color-red)" : "var(--color-muted)",
+                      }}
+                    >
                       {p.final_mark}
                     </div>
                   )}
@@ -204,42 +190,38 @@ function EvaluationsTab({ userId }: { userId: number }) {
   const { data, isLoading, error } = useUserScaleTeams(userId, { "page.size": 50, sort: "-begin_at" });
   const evaluations = data?.data ?? [];
 
-  if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-16 w-full rounded-xl" />)}</div>;
+  if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-14 w-full" />)}</div>;
   if (error) return <InsufficientScopeCard error={error} />;
-  if (!evaluations.length) return <div className="text-center py-8 text-sm" style={{ color: "var(--color-faint)" }}>No evaluations found</div>;
+  if (!evaluations.length) return <div className="text-center py-8 text-[13px]" style={{ color: "var(--color-faint)" }}>No evaluations found</div>;
 
   return (
-    <div className="space-y-2 animate-fade-in">
+    <div style={{ borderTop: "1px solid var(--color-border)" }} className="animate-fade-in">
       {evaluations.map(ev => (
         <div
           key={ev.id}
-          className="rounded-xl border p-3 md:p-4 flex items-center justify-between gap-3 flex-wrap"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+          className="flex items-center justify-between gap-3 flex-wrap px-1 py-3"
+          style={{ borderBottom: "1px solid var(--color-rule-soft)" }}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
-                style={{
-                  color: ev.filled_at ? "var(--color-green)" : "var(--color-yellow)",
-                  background: `color-mix(in srgb, ${ev.filled_at ? "var(--color-green)" : "var(--color-yellow)"} 12%, transparent)`,
-                }}
-              >
+              <span className={ev.filled_at ? "badge badge-ok" : "badge badge-warn"}>
                 {ev.filled_at ? "Filled" : "Pending"}
               </span>
-              <span className="text-[10px] font-semibold" style={{ color: "var(--color-muted)" }}>
+              <span className="text-[13px] font-medium" style={{ color: "var(--color-ink)" }}>
                 {ev.scale?.name ?? `Scale #${ev.scale_id}`}
               </span>
             </div>
-            <div className="text-xs mt-1" style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}>
+            <div className="data-mono text-[11.5px] mt-1" style={{ color: "var(--color-faint)" }}>
               {new Date(ev.begin_at).toLocaleDateString()}
             </div>
           </div>
           {ev.final_mark != null && (
-            <div className="text-lg font-black shrink-0" style={{
-              fontFamily: "var(--font-mono)",
-              color: ev.final_mark >= 50 ? "var(--color-green)" : "var(--color-red)",
-            }}>
+            <div
+              className="num text-[16px] font-medium shrink-0"
+              style={{
+                color: ev.final_mark >= 50 ? "var(--color-green)" : "var(--color-red)",
+              }}
+            >
               {ev.final_mark}
             </div>
           )}
@@ -257,38 +239,30 @@ function AchievementsGrid({ achievements, limit }: { achievements: Achievement[]
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-2 gap-3 animate-fade-in">
-      {sorted.map((ach, i) => (
+      {sorted.map(ach => (
         <div
           key={ach.id}
-          className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5"
-          style={{
-            background: "var(--color-card)",
-            borderColor: `${TIER_COLOR[ach.tier]}30`,
-            animationDelay: `${i * 0.03}s`,
-          }}
+          className="flex flex-col items-center gap-2.5 p-4 section-card text-center"
           title={ach.description}
         >
           {ach.image ? (
             <img src={ach.image} alt={ach.name} className="w-12 h-12 object-contain" />
           ) : (
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: "var(--color-card-hi)" }}>
-              ◈
+            <div
+              className="w-12 h-12 rounded flex items-center justify-center text-[11px] font-medium data-mono"
+              style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}
+            >
+              42
             </div>
           )}
-          <div className="text-xs font-semibold line-clamp-2 leading-snug" style={{ color: "#e2e8f0" }}>
+          <div className="text-[12.5px] font-medium line-clamp-2 leading-snug" style={{ color: "var(--color-ink)" }}>
             {ach.name}
           </div>
-          <span
-            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full"
-            style={{
-              background: `${TIER_COLOR[ach.tier]}15`,
-              color: TIER_COLOR[ach.tier],
-            }}
-          >
+          <span className="badge" style={{ color: TIER_COLOR[ach.tier] }}>
             {ach.tier}
           </span>
           {ach.nbr_of_success !== null && (
-            <div className="text-[10px]" style={{ color: "var(--color-faint)" }}>
+            <div className="text-[11px] data-mono" style={{ color: "var(--color-faint)" }}>
               {ach.nbr_of_success.toLocaleString()} users
             </div>
           )}
@@ -300,7 +274,7 @@ function AchievementsGrid({ achievements, limit }: { achievements: Achievement[]
 
 function SkillsTab({ cursusUsers }: { cursusUsers: FortyTwoUser["cursus_users"] }) {
   const [selected, setSelected] = useState(0);
-  if (!cursusUsers?.length) return <div className="text-center py-8 text-sm" style={{ color: "var(--color-faint)" }}>No skills data</div>;
+  if (!cursusUsers?.length) return <div className="text-center py-8 text-[13px]" style={{ color: "var(--color-faint)" }}>No skills data</div>;
 
   const cu = cursusUsers[selected]!;
   return (
@@ -311,24 +285,7 @@ function SkillsTab({ cursusUsers }: { cursusUsers: FortyTwoUser["cursus_users"] 
             <button
               key={c.id}
               onClick={() => setSelected(i)}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-              style={
-                i === selected
-                  ? { background: "var(--color-primary)", color: "#000", borderColor: "var(--color-primary)" }
-                  : { borderColor: "var(--color-border)", color: "var(--color-muted)" }
-              }
-              onMouseEnter={e => {
-                if (i !== selected) {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border-hi)";
-                  (e.currentTarget as HTMLElement).style.color = "#e2e8f0";
-                }
-              }}
-              onMouseLeave={e => {
-                if (i !== selected) {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-muted)";
-                }
-              }}
+              className={i === selected ? "btn-primary text-[12px] px-3 py-1.5" : "btn-secondary text-[12px] px-3 py-1.5"}
             >
               {c.cursus?.name ?? `Cursus ${c.cursus_id}`}
             </button>
@@ -342,34 +299,41 @@ function SkillsTab({ cursusUsers }: { cursusUsers: FortyTwoUser["cursus_users"] 
 
 function StatsCards({ user, mainCursus }: { user: FortyTwoUser; mainCursus?: any }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div>
       {mainCursus && (
-        <div className="animate-fade-in-up stagger-1">
-          <BigLevel level={mainCursus.level} />
+        <div className="pb-4 mb-2" style={{ borderBottom: "1px solid var(--color-border)" }}>
+          <LevelBar level={mainCursus.level} />
         </div>
       )}
-      {[
-        { value: user.correction_point, label: "Correction pts", color: "var(--color-primary)", glow: "glow-primary" },
-        { value: user.wallet.toLocaleString(), label: "Wallet", color: "var(--color-yellow)", glow: "glow-yellow" },
-        { value: user.achievements?.length ?? 0, label: "Achievements", color: "var(--color-purple)", glow: "glow-purple" },
-      ].map((stat, i) => (
-        <div
-          key={stat.label}
-          className={`flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5 ${stat.glow} animate-fade-in-up`}
-          style={{
-            background: "linear-gradient(180deg, var(--color-card-hi), var(--color-card))",
-            borderColor: "var(--color-border)",
-            animationDelay: `${(i + 2) * 0.08}s`,
-          }}
-        >
-          <div className="text-2xl md:text-3xl font-black leading-none" style={{ color: stat.color, fontFamily: "var(--font-mono)" }}>
-            {stat.value}
+      <div
+        className="grid grid-cols-3"
+        style={{ borderBottom: "1px solid var(--color-border)", padding: "8px 0" }}
+      >
+        <div className="py-3 pr-3">
+          <div className="text-[20px] font-medium num leading-tight" style={{ color: "var(--color-primary)" }}>
+            {user.correction_point}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: "var(--color-faint)" }}>
-            {stat.label}
+          <div className="text-[11.5px] mt-1 font-medium" style={{ color: "var(--color-faint)" }}>
+            Correction pts
           </div>
         </div>
-      ))}
+        <div className="py-3 px-3" style={{ borderLeft: "1px solid var(--color-rule-soft)" }}>
+          <div className="text-[20px] font-medium num leading-tight" style={{ color: "var(--color-yellow)" }}>
+            {user.wallet.toLocaleString()}
+          </div>
+          <div className="text-[11.5px] mt-1 font-medium" style={{ color: "var(--color-faint)" }}>
+            Wallet
+          </div>
+        </div>
+        <div className="py-3 pl-3" style={{ borderLeft: "1px solid var(--color-rule-soft)" }}>
+          <div className="text-[20px] font-medium num leading-tight" style={{ color: "var(--color-purple)" }}>
+            {user.achievements?.length ?? 0}
+          </div>
+          <div className="text-[11.5px] mt-1 font-medium" style={{ color: "var(--color-faint)" }}>
+            Achievements
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -378,17 +342,14 @@ function Sidebar({ user, mainCursus }: { user: FortyTwoUser; mainCursus?: any })
   const topCursus = mainCursus ? [mainCursus] : (user.cursus_users ?? []);
 
   return (
-    <div className="space-y-5 animate-fade-in-up stagger-2">
+    <div className="space-y-6 animate-fade-in">
       {/* Stats */}
       <StatsCards user={user} mainCursus={mainCursus} />
 
       {/* Skills Radar */}
       {topCursus.length > 0 && (
-        <div
-          className="rounded-2xl border p-5"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-        >
-          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: "var(--color-muted)" }}>
+        <div className="section-card p-5">
+          <div className="text-[13px] font-semibold tracking-tight mb-4" style={{ color: "var(--color-ink)" }}>
             Skills
           </div>
           <SkillsRadar skills={topCursus[0]?.skills ?? []} size={240} />
@@ -397,17 +358,12 @@ function Sidebar({ user, mainCursus }: { user: FortyTwoUser; mainCursus?: any })
 
       {/* Top Achievements */}
       {(user.achievements?.length ?? 0) > 0 && (
-        <div
-          className="rounded-2xl border p-5"
-          style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
-        >
+        <div className="section-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-muted)" }}>
+            <div className="text-[13px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
               Top Achievements
             </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold" style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}>
-              {user.achievements?.length}
-            </span>
+            <span className="badge">{user.achievements?.length}</span>
           </div>
           <AchievementsGrid achievements={user.achievements ?? []} limit={6} />
         </div>
@@ -436,13 +392,11 @@ export function ProfilePage({
 
   if (!targetLogin) {
     return (
-      <div className="flex flex-col items-center gap-4 p-12 text-center animate-fade-in-up">
-        <div className="text-4xl" style={{ color: "var(--color-faint)" }}>◈</div>
-        <p className="text-sm" style={{ color: "var(--color-faint)" }}>No profile selected</p>
+      <div className="flex flex-col items-center gap-4 p-12 text-center animate-fade-in">
+        <p className="text-[13px]" style={{ color: "var(--color-faint)" }}>No profile selected</p>
         <button
           onClick={() => onNavigate("students")}
-          className="text-xs px-4 py-2 rounded-xl border transition-all hover:bg-card-hi"
-          style={{ borderColor: "var(--color-border-hi)", color: "var(--color-muted)" }}
+          className="btn-secondary"
         >
           Browse students →
         </button>
@@ -454,9 +408,9 @@ export function ProfilePage({
 
   if (error || !user) {
     return (
-      <div className="flex flex-col items-center gap-4 p-12 text-center animate-fade-in-up">
+      <div className="flex flex-col items-center gap-4 p-12 text-center animate-fade-in">
         <div className="text-4xl" style={{ color: "var(--color-red)" }}>✕</div>
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>{error?.message ?? "Profile not found"}</p>
+        <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>{error?.message ?? "Profile not found"}</p>
       </div>
     );
   }
@@ -475,129 +429,96 @@ export function ProfilePage({
   ];
 
   return (
-    <div className="min-h-full">
-      {/* ── Ambient header glow ── */}
+    <div className="min-h-full p-5 md:p-8 max-w-5xl mx-auto animate-fade-in">
+      {/* Thin coalition rail */}
       {coalition && (
         <div
-          className="h-px w-full"
-          style={{
-            background: `linear-gradient(90deg, transparent, ${coalition.color}, transparent)`,
-            boxShadow: `0 0 60px 8px ${coalition.color}30`,
-          }}
+          className="coalition-rail mb-5"
+          style={{ height: 2, ["--coalition" as any]: coalition.color }}
         />
       )}
 
-      {/* ── Header ── */}
+      {/* ── Quiet profile hero ── */}
       <div
-        className="relative px-5 md:px-8 pt-6 md:pt-8 pb-6 animate-fade-in-up"
-        style={{
-          background: coalition
-            ? `linear-gradient(180deg, ${coalition.color}10 0%, var(--color-bg) 100%)`
-            : "var(--color-bg)",
-        }}
+        className="flex items-start gap-4 pb-5 mb-5"
+        style={{ borderBottom: "1px solid var(--color-border)", ["--coalition" as any]: coalition?.color }}
       >
-        <div className="flex items-start gap-5 md:gap-6 flex-wrap">
-          {/* Avatar */}
-          <div className="relative shrink-0 animate-scale-in">
-            <div
-              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl p-[2px]"
-              style={{
-                background: `linear-gradient(135deg, ${coalition?.color ?? "var(--color-border-hi)"}, ${coalition?.color ? coalition.color + "80" : "var(--color-border)"})`,
-              }}
-            >
-              <img
-                src={user.image?.versions?.large}
-                alt={user.login}
-                className="w-full h-full rounded-[14px] object-cover"
-                style={{ background: "var(--color-card)" }}
-              />
+        <div className="relative shrink-0">
+          <img
+            src={user.image?.versions?.large}
+            alt={user.login}
+            className="w-14 h-14 rounded-full avatar-soft object-cover"
+          />
+          {user.location && (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+              style={{ background: "var(--color-green)", border: "2px solid var(--color-bg)" }}
+            />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <h1 className="text-[22px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+                {user.displayname}
+              </h1>
+              <div className="text-[12.5px] data-mono mt-0.5 font-medium" style={{ color: "var(--color-primary)" }}>
+                @{user.login}
+              </div>
+              {title && (
+                <div className="text-[13px] mt-1 italic" style={{ color: "var(--color-muted)" }}>
+                  {title.name.replace("%login", user.login)}
+                </div>
+              )}
             </div>
-            {user.location && (
-              <span className="online-pulse absolute -bottom-1 -right-1 border-[2.5px]" style={{ borderColor: "var(--color-bg)" }} />
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <CoalitionBadge coalition={coalition} />
+              {user.location ? (
+                <span
+                  className="badge"
+                  style={{
+                    color: "var(--color-green)",
+                    borderColor: "color-mix(in srgb, var(--color-green) 30%, var(--color-border))",
+                  }}
+                >
+                  <span className="online-dot" />
+                  {user.location}
+                </span>
+              ) : (
+                <span className="badge">
+                  <span className="status-dot" />
+                  offline
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Identity */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="animate-fade-in-up stagger-1">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: "#e2e8f0", fontFamily: "var(--font-sans)" }}>
-                  {user.displayname}
-                </h1>
-                <div className="font-semibold text-sm mt-0.5" style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}>
-                  @{user.login}
-                </div>
-                {title && (
-                  <div
-                    className="text-[11px] mt-2 italic px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 border"
-                    style={{ color: "var(--color-muted)", borderColor: "var(--color-border)", background: "var(--color-card)" }}
-                  >
-                    <span>✦</span>
-                    {title.name.replace("%login", user.login)}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap animate-fade-in-up stagger-2">
-                <CoalitionBadge coalition={coalition} size="lg" />
-                {user.location ? (
-                  <span
-                    className="text-[11px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5"
-                    style={{
-                      background: "color-mix(in srgb, var(--color-green) 10%, transparent)",
-                      color: "var(--color-green)",
-                      fontFamily: "var(--font-mono)",
-                      border: "1px solid color-mix(in srgb, var(--color-green) 20%, transparent)",
-                    }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-green" />
-                    {user.location}
-                  </span>
-                ) : (
-                  <span
-                    className="text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1.5"
-                    style={{
-                      background: "var(--color-card)",
-                      color: "var(--color-faint)",
-                      border: "1px solid var(--color-border)",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-faint)" }} />
-                    offline
-                  </span>
-                )}
-              </div>
+          {mainCursus && (
+            <div className="mt-3 max-w-[260px]">
+              <LevelBar level={mainCursus.level} />
             </div>
+          )}
 
-            <div className="mt-3 flex items-center gap-2 flex-wrap animate-fade-in-up stagger-3">
-              {primaryCampus && (
-                <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: "var(--color-card)", color: "var(--color-muted)" }}>
-                  {primaryCampus.name}
-                </span>
-              )}
-              {mainCursus && (
-                <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: "var(--color-card)", color: "var(--color-muted)" }}>
-                  {mainCursus.grade ?? mainCursus.cursus?.name}
-                </span>
-              )}
-              {user["staff?"] && (
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md" style={{ background: "color-mix(in srgb, var(--color-yellow) 12%, transparent)", color: "var(--color-yellow)" }}>
-                  STAFF
-                </span>
-              )}
-              {user.alumni && (
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md" style={{ background: "var(--color-card-hi)", color: "var(--color-faint)" }}>
-                  ALUMNI
-                </span>
-              )}
-            </div>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            {primaryCampus && (
+              <span className="badge">{primaryCampus.name}</span>
+            )}
+            {mainCursus && (
+              <span className="badge">{mainCursus.grade ?? mainCursus.cursus?.name}</span>
+            )}
+            {user["staff?"] && (
+              <span className="badge badge-warn">STAFF</span>
+            )}
+            {user.alumni && (
+              <span className="badge">ALUMNI</span>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── Two-column layout ── */}
-      <div className="px-5 md:px-8 pb-8 grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 xl:gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 xl:gap-8">
         {/* LEFT: Main content */}
         <div className="space-y-5 min-w-0">
           {/* Mobile-only stats row */}
@@ -605,38 +526,22 @@ export function ProfilePage({
             <StatsCards user={user} mainCursus={mainCursus} />
           </div>
 
-          {/* Tabs */}
-          <div className="overflow-x-auto animate-fade-in-up stagger-3">
-            <div className="flex gap-1 min-w-max">
+          {/* Quiet segmented tabs */}
+          <div className="overflow-x-auto">
+            <div className="flex gap-1.5 min-w-max">
               {TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  className="relative px-4 py-2.5 text-[13px] font-semibold transition-all rounded-lg"
-                  style={
+                  className={
                     tab === t.id
-                      ? { background: "var(--color-card-hi)", color: "#e2e8f0" }
-                      : { color: "var(--color-faint)" }
+                      ? "btn-primary text-[12.5px] px-3.5 py-1.5"
+                      : "btn-secondary text-[12.5px] px-3.5 py-1.5"
                   }
-                  onMouseEnter={e => {
-                    if (tab !== t.id) (e.currentTarget as HTMLElement).style.color = "var(--color-muted)";
-                  }}
-                  onMouseLeave={e => {
-                    if (tab !== t.id) (e.currentTarget as HTMLElement).style.color = "var(--color-faint)";
-                  }}
                 >
-                  {tab === t.id && (
-                    <div className="absolute inset-x-2 bottom-1 h-[2px] rounded-full" style={{ background: "var(--color-primary)" }} />
-                  )}
-                  <span className="relative z-10">{t.label}</span>
+                  {t.label}
                   {t.count !== undefined && (
-                    <span
-                      className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-bold"
-                      style={{
-                        background: tab === t.id ? "var(--color-card)" : "var(--color-card-hi)",
-                        color: "var(--color-faint)",
-                      }}
-                    >
+                    <span className="data-mono text-[11px] opacity-75">
                       {t.count}
                     </span>
                   )}
@@ -645,22 +550,20 @@ export function ProfilePage({
             </div>
           </div>
 
-          <div className="h-px" style={{ background: "var(--color-border)" }} />
-
           {/* Tab content */}
           <div>
             {tab === "projects" && (
               <div className="space-y-3">
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   {(["table", "timeline"] as ProjectView[]).map(v => (
                     <button
                       key={v}
                       onClick={() => setProjView(v)}
-                      className="text-[10px] font-bold uppercase px-3 py-1 rounded-lg tracking-wider transition-all"
-                      style={{
-                        background: projView === v ? "var(--color-primary)" : "var(--color-card-hi)",
-                        color: projView === v ? "#000" : "var(--color-muted)",
-                      }}
+                      className={
+                        projView === v
+                          ? "btn-primary text-[12px] px-3 py-1"
+                          : "btn-secondary text-[12px] px-3 py-1"
+                      }
                     >
                       {v}
                     </button>

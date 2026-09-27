@@ -411,52 +411,47 @@ export function SlotsPage() {
     : null;
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto flex flex-col gap-4">
+    <div className="p-5 md:p-8 max-w-5xl mx-auto flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <h1
-            className="text-base md:text-lg font-bold tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}
-          >
-            &gt; SLOTS_
+      <div>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+          <h1 className="text-[24px] font-semibold tracking-tight" style={{ color: "var(--color-ink)" }}>
+            Slots
           </h1>
-          <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-            style={{
-              color: "var(--color-muted)",
-              borderColor: "var(--color-border)",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
+          <span className="badge">
             {activeSlots.length} {activeSlots.length === 1 ? "slot" : "slots"}
           </span>
         </div>
-        <a
-          href="https://profile.intra.42.fr/slots"
-          target="_blank"
-          rel="noreferrer"
-          className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border transition-all hover:border-muted"
-          style={{ color: "var(--color-muted)", borderColor: "var(--color-border)" }}
-        >
-          Open on 42 ↗
-        </a>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <p className="text-[13.5px]" style={{ color: "var(--color-muted)" }}>
+            Manage your evaluation availability.
+          </p>
+          <a
+            href="https://profile.intra.42.fr/slots"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[12px] font-medium data-mono transition-colors"
+            style={{ color: "var(--color-primary)" }}
+          >
+            Open on 42 ↗
+          </a>
+        </div>
       </div>
 
       {/* Create error */}
       {createError && (
         <div
-          className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs"
+          className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-[12.5px]"
           style={{
-            background: "color-mix(in srgb, var(--color-red) 10%, var(--color-card))",
-            borderColor: "color-mix(in srgb, var(--color-red) 40%, transparent)",
+            background: "var(--color-surface)",
+            borderColor: "color-mix(in srgb, var(--color-red) 30%, var(--color-border))",
             color: "var(--color-red)",
           }}
         >
           <span>{createError}</span>
           <button
             onClick={() => setCreateError(null)}
-            className="opacity-60 hover:opacity-100 font-bold"
+            className="opacity-60 hover:opacity-100"
           >
             ×
           </button>
@@ -467,8 +462,8 @@ export function SlotsPage() {
       {/* Loading */}
       {isLoading && (
         <div className="space-y-3">
-          <div className="skeleton h-8 w-56 rounded-lg" />
-          <div className="skeleton h-96 w-full rounded-xl" />
+          <div className="skeleton h-8 w-56" />
+          <div className="skeleton h-96 w-full" />
         </div>
       )}
 
@@ -492,7 +487,7 @@ export function SlotsPage() {
               <button
                 onClick={prevDay}
                 disabled={isToday}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all disabled:opacity-20 disabled:cursor-default hover:bg-card-hi active:scale-90"
+                className="btn-quiet w-8 h-8 px-0 disabled:opacity-20 disabled:cursor-default"
                 style={{ color: "var(--color-muted)" }}
                 aria-label="Previous day"
               >
@@ -500,27 +495,20 @@ export function SlotsPage() {
               </button>
               <div className="flex items-baseline gap-2">
                 <h2
-                  className="text-sm md:text-base font-bold"
-                  style={{ fontFamily: "var(--font-mono)", color: "#e2e8f0" }}
+                  className="text-[15px] font-semibold tracking-tight"
+                  style={{ color: "var(--color-ink)" }}
                 >
                   {dateLabel}
                 </h2>
                 {isToday && (
-                  <span
-                    className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider"
-                    style={{
-                      background: "var(--color-primary)",
-                      color: "#000",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
+                  <span className="badge" style={{ color: "var(--color-primary)" }}>
                     Today
                   </span>
                 )}
               </div>
               <button
                 onClick={nextDay}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all hover:bg-card-hi active:scale-90"
+                className="btn-quiet w-8 h-8 px-0"
                 style={{ color: "var(--color-muted)" }}
                 aria-label="Next day"
               >
@@ -528,22 +516,16 @@ export function SlotsPage() {
               </button>
             </div>
             <span
-              className="hidden sm:inline text-[10px] tracking-wider"
-              style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
+              className="hidden sm:inline text-[11.5px] data-mono"
+              style={{ color: "var(--color-faint)" }}
             >
               drag to create · drag edges to resize · click × to delete
             </span>
             <button
-              className="sm:hidden text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all active:scale-95"
+              className={createMode ? "btn-primary sm:hidden text-[12px] px-3 py-1.5" : "btn-secondary sm:hidden text-[12px] px-3 py-1.5"}
               onClick={() => setCreateMode((m) => !m)}
-              style={{
-                background: createMode ? "var(--color-primary)" : "transparent",
-                borderColor: createMode ? "var(--color-primary)" : "var(--color-border)",
-                color: createMode ? "#000" : "var(--color-muted)",
-                fontFamily: "var(--font-mono)",
-              }}
             >
-              {createMode ? "✓ CREATING" : "+ CREATE"}
+              {createMode ? "✓ Creating" : "+ Create"}
             </button>
           </div>
 
@@ -557,24 +539,24 @@ export function SlotsPage() {
                   key={d.toISOString()}
                   onClick={() => !past && setActiveDate(d)}
                   disabled={past}
-                  className="shrink-0 flex flex-col items-center px-3 py-1.5 rounded-lg transition-all disabled:opacity-15 disabled:cursor-default hover:bg-card-hi active:scale-95"
+                  className="shrink-0 flex flex-col items-center px-3 py-1.5 rounded transition-colors disabled:opacity-25 disabled:cursor-default"
                   style={{
-                    background: active ? "var(--color-primary)" : "transparent",
+                    background: active ? "var(--color-primary-glow)" : "transparent",
                     border: active
-                      ? "1px solid var(--color-primary)"
+                      ? "1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border))"
                       : "1px solid transparent",
-                    color: active ? "#000" : "var(--color-muted)",
+                    color: active ? "var(--color-primary)" : "var(--color-muted)",
                     minWidth: "3rem",
                   }}
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider leading-none">
+                  <span className="text-[10px] font-medium data-mono leading-none">
                     {d.toLocaleDateString("en-US", { weekday: "short" })}
                   </span>
-                  <span className="text-sm font-extrabold mt-0.5 leading-none">
+                  <span className="text-[14px] font-semibold num mt-0.5 leading-none">
                     {d.getDate()}
                   </span>
                   {d.getMonth() !== today.getMonth() && (
-                    <span className="text-[9px] leading-none mt-px" style={{ opacity: 0.7 }}>
+                    <span className="text-[9px] leading-none mt-px" style={{ color: "var(--color-faint)" }}>
                       {d.toLocaleDateString("en-US", { month: "short" })}
                     </span>
                   )}
@@ -585,8 +567,8 @@ export function SlotsPage() {
 
           {/* Calendar grid */}
           <div
-            className="rounded-xl border overflow-hidden"
-            style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
+            className="rounded border overflow-hidden"
+            style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
           >
             {/* Column header */}
             <div
@@ -594,14 +576,14 @@ export function SlotsPage() {
               style={{ borderColor: "var(--color-border)" }}
             >
               <span
-                className="text-[11px] font-extrabold uppercase tracking-widest"
-                style={{ color: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
+                className="text-[13px] font-semibold tracking-tight"
+                style={{ color: "var(--color-ink)" }}
               >
                 {activeDate.toLocaleDateString("en-US", { weekday: "long" })}
               </span>
               <span
-                className="ml-auto text-[10px] font-semibold"
-                style={{ color: "var(--color-faint)", fontFamily: "var(--font-mono)" }}
+                className="ml-auto text-[11.5px] data-mono"
+                style={{ color: "var(--color-faint)" }}
               >
                 {activeSlots.length} slot{activeSlots.length !== 1 ? "s" : ""}
               </span>
@@ -618,11 +600,10 @@ export function SlotsPage() {
                 {HOURS.map((h) => (
                   <div
                     key={h}
-                    className="text-[10px] text-right pr-2"
+                    className="text-[10px] text-right pr-2 data-mono"
                     style={{
                       height: `${HOUR_HEIGHT}px`,
                       color: "var(--color-faint)",
-                      fontFamily: "var(--font-mono)",
                       paddingTop: "2px",
                       lineHeight: 1,
                     }}
@@ -653,16 +634,16 @@ export function SlotsPage() {
                     <div
                       className="absolute inset-0 border-b"
                       style={{
-                        borderColor: "var(--color-border)",
-                        opacity: h % 3 === 0 ? 0.5 : 0.25,
+                        borderColor: "var(--color-rule-soft)",
+                        opacity: h % 3 === 0 ? 1 : 0.55,
                       }}
                     />
                     <div
                       className="absolute left-0 right-0 border-b pointer-events-none"
                       style={{
-                        borderColor: "var(--color-border)",
+                        borderColor: "var(--color-rule-soft)",
                         top: "50%",
-                        opacity: 0.15,
+                        opacity: 0.45,
                         borderStyle: "dotted",
                       }}
                     />
@@ -676,8 +657,8 @@ export function SlotsPage() {
                     style={{
                       height: invalidAreaHeight,
                       background:
-                        "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--color-faint) 18%, transparent), color-mix(in srgb, var(--color-faint) 18%, transparent) 8px, color-mix(in srgb, var(--color-faint) 10%, transparent) 8px, color-mix(in srgb, var(--color-faint) 10%, transparent) 16px)",
-                      borderColor: "color-mix(in srgb, var(--color-faint) 35%, transparent)",
+                        "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--color-faint) 10%, transparent), color-mix(in srgb, var(--color-faint) 10%, transparent) 8px, color-mix(in srgb, var(--color-faint) 5%, transparent) 8px, color-mix(in srgb, var(--color-faint) 5%, transparent) 16px)",
+                      borderColor: "color-mix(in srgb, var(--color-faint) 25%, transparent)",
                       touchAction: "pan-y",
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -698,19 +679,15 @@ export function SlotsPage() {
                     }}
                   >
                     <div
-                      className="w-2.5 h-2.5 rounded-full -ml-[5px]"
-                      style={{
-                        background: "var(--color-purple)",
-                        boxShadow:
-                          "0 0 6px 2px color-mix(in srgb, var(--color-purple) 40%, transparent)",
-                      }}
+                      className="w-2 h-2 rounded-full -ml-[4px]"
+                      style={{ background: "var(--color-purple)" }}
                     />
                     <div
                       className="flex-1"
                       style={{
                         height: "1px",
-                        background:
-                          "linear-gradient(to right, var(--color-purple), color-mix(in srgb, var(--color-purple) 0%, transparent))",
+                        background: "var(--color-purple)",
+                        opacity: 0.55,
                       }}
                     />
                   </div>
@@ -719,17 +696,17 @@ export function SlotsPage() {
                 {/* Drag ghost preview */}
                 {ghostStyle && dragDisplay && (
                   <div
-                    className="absolute left-1 right-1 rounded-lg border pointer-events-none z-20 flex flex-col justify-center px-2.5"
+                    className="absolute left-1 right-1 rounded border pointer-events-none z-20 flex flex-col justify-center px-2.5"
                     style={{
                       ...ghostStyle,
-                      background: "color-mix(in srgb, var(--color-primary) 18%, transparent)",
-                      borderColor: "var(--color-primary)",
+                      background: "var(--color-primary-glow)",
+                      borderColor: "color-mix(in srgb, var(--color-primary) 40%, var(--color-border))",
                       borderStyle: "dashed",
                     }}
                   >
                     <span
-                      className="text-[11px] font-bold leading-tight"
-                      style={{ fontFamily: "var(--font-mono)", color: "var(--color-primary)" }}
+                      className="text-[11px] font-medium data-mono leading-tight"
+                      style={{ color: "var(--color-primary)" }}
                     >
                       {formatMinLabel(dragDisplay.startMin)} – {formatMinLabel(dragDisplay.endMin)}
                     </span>
@@ -749,12 +726,12 @@ export function SlotsPage() {
                 {/* Resize ghost preview */}
                 {resizeGhost && (
                   <div
-                    className="absolute left-1 right-1 rounded-lg border pointer-events-none z-20"
+                    className="absolute left-1 right-1 rounded border pointer-events-none z-20"
                     style={{
                       top: resizeGhost.top,
                       height: Math.max(resizeGhost.height, 4),
-                      background: "color-mix(in srgb, var(--color-primary) 18%, transparent)",
-                      borderColor: "var(--color-primary)",
+                      background: "var(--color-primary-glow)",
+                      borderColor: "color-mix(in srgb, var(--color-primary) 40%, var(--color-border))",
                       borderStyle: "dashed",
                     }}
                   />
@@ -772,14 +749,12 @@ export function SlotsPage() {
                     <div
                       key={slot.id}
                       data-slot="true"
-                      className="absolute left-1 right-1 rounded-lg border px-2 py-1.5 text-[11px] flex flex-col gap-0.5 overflow-hidden group/slot transition-shadow hover:z-10"
+                      className="absolute left-1 right-1 rounded border px-2 py-1.5 text-[11px] flex flex-col gap-0.5 overflow-hidden group/slot"
                       style={{
                         ...(isResizingThis ? { top: resizeGhost!.top, height: Math.max(resizeGhost!.height, 20) } : style),
-                        background:
-                          "color-mix(in srgb, var(--color-primary) 10%, var(--color-card))",
-                        borderColor:
-                          "color-mix(in srgb, var(--color-primary) 35%, transparent)",
-                        color: "#e2e8f0",
+                        background: "var(--color-surface)",
+                        borderColor: "color-mix(in srgb, var(--color-primary) 30%, var(--color-border))",
+                        color: "var(--color-ink)",
                         opacity: isResizingThis ? 0.7 : 1,
                         userSelect: "none",
                         WebkitUserSelect: "none",
@@ -798,11 +773,10 @@ export function SlotsPage() {
 
                       <div className="flex items-center justify-between gap-1" style={{ zIndex: 1 }}>
                         <span
-                          className="font-bold truncate leading-tight"
-                          style={{ fontFamily: "var(--font-mono)" }}
+                          className="font-medium truncate leading-tight data-mono"
                         >
                           {begin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          <span style={{ opacity: 0.5, fontWeight: 400, margin: "0 2px" }}>–</span>
+                          <span style={{ opacity: 0.45, fontWeight: 400, margin: "0 2px" }}>–</span>
                           {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <button
@@ -811,7 +785,7 @@ export function SlotsPage() {
                             if (confirm("Delete this slot?")) del.mutate(slot.slotIds);
                           }}
                           disabled={del.isPending}
-                          className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold opacity-60 sm:opacity-0 sm:group-hover/slot:opacity-100 transition-all hover:bg-red-500/25"
+                          className="shrink-0 w-5 h-5 rounded flex items-center justify-center text-xs font-medium opacity-60 sm:opacity-0 sm:group-hover/slot:opacity-100 transition-opacity"
                           style={{ color: "var(--color-red)", WebkitTapHighlightColor: "transparent" }}
                           title="Delete slot"
                         >
